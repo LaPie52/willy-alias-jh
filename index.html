@@ -1,0 +1,2447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Willy alias JH - Le Shérif du Quartier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
+    <style>
+        /* Typographie BD et mise en page plein écran */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            user-select: none;
+            background-color: #18181b;
+        }
+        .font-cartoon {
+            font-family: 'Bangers', cursive;
+            letter-spacing: 0.06em;
+        }
+        .comic-box {
+            border: 3px solid #18181b;
+            box-shadow: 4px 4px 0px #18181b;
+        }
+        .comic-btn {
+            border: 3px solid #18181b;
+            box-shadow: 3px 3px 0px #18181b;
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
+        }
+        .comic-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #18181b;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        .drop-active {
+            outline: 4px dashed #facc15;
+            outline-offset: -8px;
+        }
+    </style>
+</head>
+<body id="gameRoot" class="relative w-screen h-screen overflow-hidden bg-zinc-900">
+
+    <!-- Canvas principal du jeu -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Entrées fichiers cachées -->
+    <input type="file" id="bgFileInput" accept="image/*" class="hidden" />
+    <input type="file" id="cyclistFileInput" accept="image/*" class="hidden" />
+    <input type="file" id="avatarFileInput" accept="image/*" class="hidden" />
+    <input type="file" id="voiceFileInput" accept="audio/*" class="hidden" />
+    <input type="file" id="customTargetFileInput" accept="image/*" class="hidden" />
+    <audio id="customVoiceAudio" preload="auto" class="hidden"></audio>
+
+    <!-- Barre HUD supérieure (Score, Grenades, Chrono, Combo, Actions) -->
+    <div id="hudBar" class="pointer-events-none fixed top-0 left-0 right-0 z-20 p-3 sm:p-4 flex flex-wrap items-start justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div class="bg-amber-300 comic-box rounded-xl px-3 sm:px-4 py-1.5">
+                <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Score</div>
+                <div id="scoreDisplay" class="font-cartoon text-2xl sm:text-3xl text-zinc-900 leading-tight">0</div>
+            </div>
+
+            <div class="bg-orange-200 comic-box rounded-xl px-3 sm:px-4 py-1.5">
+                <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Grenades (Clic Droit)</div>
+                <div id="grenadeDisplay" class="font-cartoon text-xl sm:text-2xl text-zinc-900 leading-tight">💣💣💣💣</div>
+            </div>
+
+            <div class="bg-sky-200 comic-box rounded-xl px-3 sm:px-4 py-1.5">
+                <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Temps</div>
+                <div id="timeDisplay" class="font-cartoon text-2xl sm:text-3xl text-zinc-900 leading-tight">60s</div>
+            </div>
+
+            <div id="comboBadge" class="hidden bg-rose-500 text-white comic-box rounded-xl px-3 py-1.5">
+                <span id="comboText" class="font-cartoon text-xl sm:text-2xl">x2 COMBO !</span>
+            </div>
+        </div>
+
+        <div class="pointer-events-auto flex flex-wrap items-center gap-2">
+            <button id="uploadBgBtn" type="button" class="comic-btn bg-white hover:bg-amber-100 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
+                📷 Rue
+            </button>
+            <button id="uploadCyclistBtn" type="button" class="comic-btn bg-pink-200 hover:bg-pink-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
+                🚴 Cycliste
+            </button>
+            <button id="uploadAvatarBtn" type="button" class="comic-btn bg-lime-200 hover:bg-lime-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
+                🪖 Avatar
+            </button>
+            <button id="uploadVoiceBtn" type="button" class="comic-btn bg-violet-200 hover:bg-violet-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
+                🎙️ Audio voix
+            </button>
+            <button id="openCustomTargetsBtn" type="button" class="comic-btn bg-emerald-200 hover:bg-emerald-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
+                🚗➕ Mes cibles (<span id="customTargetsCount">0</span>)
+            </button>
+            <button id="muteBtn" type="button" class="comic-btn bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-bold text-sm px-3 py-2 rounded-xl cursor-pointer" title="Couper / activer le son">
+                🔊
+            </button>
+            <button id="restartBtn" type="button" class="comic-btn bg-amber-400 hover:bg-amber-500 text-zinc-900 font-black text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
+                ↻ Rejouer
+            </button>
+        </div>
+    </div>
+
+    <!-- Bannière d'info / statut non bloquante -->
+    <div id="statusToast" class="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 z-30 hidden">
+        <div id="statusToastText" class="bg-zinc-900/95 text-amber-300 border-2 border-amber-300 font-bold text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg"></div>
+    </div>
+
+    <!-- Bouton tactile dédié aux grenades pour téléphone / tablette -->
+    <button id="mobileGrenadeBtn" type="button" class="fixed bottom-4 right-4 z-30 comic-btn bg-orange-400 hover:bg-orange-500 active:scale-95 text-zinc-950 font-cartoon text-2xl sm:text-3xl px-4 py-2.5 rounded-2xl cursor-pointer flex items-center gap-2">
+        <span>💣 GRENADE</span>
+        <span id="mobileGrenadeCount" class="bg-zinc-950 text-amber-300 text-sm px-2 py-0.5 rounded-lg font-sans font-black">4</span>
+    </button>
+
+    <!-- Bannière géante lorsque JH hurle tous les 10000 points -->
+    <div id="shoutBanner" class="pointer-events-none fixed inset-x-0 top-24 z-30 flex justify-center hidden">
+        <div class="bg-red-600 text-yellow-200 comic-box rounded-2xl px-6 py-3 transform -rotate-2 animate-bounce">
+            <div id="shoutBannerTitle" class="font-cartoon text-4xl sm:text-6xl tracking-wider drop-shadow">Fuck Johnny !!</div>
+        </div>
+    </div>
+
+    <!-- Écran d'introduction au lancement avec avatar et musique rock'n'roll -->
+    <div id="introScreen" class="fixed inset-0 z-40 flex items-center justify-center bg-zinc-950/90 backdrop-blur-sm p-4">
+        <div class="max-w-xl w-full bg-amber-50 comic-box rounded-3xl p-5 sm:p-7 text-zinc-900 text-center space-y-4">
+            <div class="inline-block bg-rose-500 text-white font-cartoon text-lg px-3 py-1 rounded-full border-2 border-zinc-900">
+                🎸 ROCK'N'ROLL SHÉRIF EDITION
+            </div>
+            <h1 class="font-cartoon text-4xl sm:text-6xl text-zinc-900 leading-none">
+                WILLY ALIAS JH
+            </h1>
+            <p class="text-xs sm:text-sm font-semibold text-zinc-700">
+                Clic gauche : <strong>Tirer</strong> • Clic droit : <strong>Grenade (4 max)</strong> • Épargne la <strong>cycliste</strong> (-1000 pts) • Tous les 10000 pts : <strong>« Fuck Johnny »</strong> !
+            </p>
+
+            <div class="flex flex-col items-center justify-center">
+                <canvas id="introAvatarCanvas" width="240" height="240" class="w-44 h-44 sm:w-56 sm:h-56 rounded-2xl border-4 border-zinc-900 bg-zinc-800 shadow-lg"></canvas>
+                <div class="mt-2 flex flex-wrap justify-center gap-2">
+                    <button id="introLoadAvatarBtn" type="button" class="comic-btn bg-lime-200 hover:bg-lime-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
+                        🖼️ Charger l'image avatar
+                    </button>
+                    <button id="introMusicBtn" type="button" class="comic-btn bg-amber-200 hover:bg-amber-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
+                        🎸 Musique Rock : ON
+                    </button>
+                </div>
+            </div>
+
+            <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-emerald-400 hover:bg-emerald-500 text-zinc-950 font-cartoon text-3xl sm:text-4xl py-3 rounded-2xl cursor-pointer">
+                ▶ SE RETOURNER & ENTRER DANS LE JEU
+            </button>
+        </div>
+    </div>
+
+    <!-- Modale de gestion des cibles personnalisées -->
+    <div id="customTargetsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
+        <div class="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white comic-box rounded-3xl p-5 sm:p-6 text-zinc-900 space-y-4">
+            <div class="flex items-center justify-between border-b-2 border-zinc-200 pb-3">
+                <h2 class="font-cartoon text-3xl text-zinc-900">🚗➕ MES CIBLES PERSONNALISÉES</h2>
+                <button id="closeCustomTargetsBtn" type="button" class="comic-btn bg-zinc-200 hover:bg-zinc-300 font-black text-sm px-3 py-1 rounded-xl cursor-pointer">✕</button>
+            </div>
+
+            <p class="text-xs sm:text-sm text-zinc-600">
+                Ajoute tes propres voitures, trottinettes, motos ou animaux. Le fond uni connecté aux bords est automatiquement détouré et le sens s'adapte selon le côté d'arrivée.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-amber-50 p-4 rounded-2xl border-2 border-zinc-900">
+                <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
+                    <button id="pickCustomImageBtn" type="button" class="comic-btn bg-amber-300 hover:bg-amber-400 font-bold text-xs sm:text-sm px-4 py-2 rounded-xl cursor-pointer">
+                        📁 Choisir une image
+                    </button>
+                    <span id="draftImageStatus" class="text-xs font-semibold text-zinc-600">Aucune image sélectionnée</span>
+                    <canvas id="draftPreviewCanvas" width="96" height="64" class="ml-auto rounded-lg border-2 border-zinc-800 bg-zinc-100"></canvas>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black uppercase mb-1">Nom de la cible</label>
+                    <input id="customTargetName" type="text" placeholder="Ex: Trottinette rapide" class="w-full border-2 border-zinc-900 rounded-xl px-3 py-1.5 text-sm font-semibold" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black uppercase mb-1">Voie de passage</label>
+                    <select id="customTargetLane" class="w-full border-2 border-zinc-900 rounded-xl px-3 py-1.5 text-sm font-semibold bg-white">
+                        <option value="road">🛣️ Route (voitures, camions, trottinettes)</option>
+                        <option value="sidewalk">🚶 Trottoir (piétons, animaux, petits engins)</option>
+                        <option value="sky">☁️ Ciel (drones, oiseaux, objets volants)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black uppercase mb-1">Orientation d'origine de l'image</label>
+                    <select id="customTargetFacing" class="w-full border-2 border-zinc-900 rounded-xl px-3 py-1.5 text-sm font-semibold bg-white">
+                        <option value="right">Regarde vers la droite ➡️</option>
+                        <option value="left">Regarde vers la gauche ⬅️</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-black uppercase mb-1">Points</label>
+                        <input id="customTargetPoints" type="number" value="200" min="10" max="5000" step="10" class="w-full border-2 border-zinc-900 rounded-xl px-2 py-1.5 text-sm font-bold" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-black uppercase mb-1">Vitesse</label>
+                        <input id="customTargetSpeed" type="number" value="230" min="50" max="700" step="10" class="w-full border-2 border-zinc-900 rounded-xl px-2 py-1.5 text-sm font-bold" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-black uppercase mb-1">Taille (px)</label>
+                        <input id="customTargetSize" type="number" value="95" min="40" max="220" step="5" class="w-full border-2 border-zinc-900 rounded-xl px-2 py-1.5 text-sm font-bold" />
+                    </div>
+                </div>
+
+                <div class="sm:col-span-2 flex justify-end">
+                    <button id="addCustomTargetBtn" type="button" class="comic-btn bg-emerald-400 hover:bg-emerald-500 text-zinc-950 font-black text-sm px-5 py-2 rounded-xl cursor-pointer">
+                        + Ajouter à mes cibles
+                    </button>
+                </div>
+            </div>
+
+            <div id="customTargetsList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Écran de fin de partie -->
+    <div id="gameOverModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/75 p-4">
+        <div class="max-w-md w-full bg-amber-50 comic-box rounded-3xl p-6 text-zinc-900 text-center space-y-4">
+            <h2 class="font-cartoon text-5xl text-zinc-900">FIN DE RONDE !</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-amber-200 border-2 border-zinc-900 rounded-2xl p-3">
+                    <div class="text-xs font-black uppercase">Score final</div>
+                    <div id="finalScore" class="font-cartoon text-4xl">0</div>
+                </div>
+                <div class="bg-emerald-200 border-2 border-zinc-900 rounded-2xl p-3">
+                    <div class="text-xs font-black uppercase">Record</div>
+                    <div id="bestScoreDisplay" class="font-cartoon text-4xl">0</div>
+                </div>
+            </div>
+            <button id="playAgainBtn" type="button" class="w-full comic-btn bg-amber-400 hover:bg-amber-500 text-zinc-950 font-cartoon text-3xl py-3 rounded-2xl cursor-pointer">
+                ↻ REJOUER UNE PARTIE
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // CONFIGURATION ADMIN PERMANENTE (fichiers placés dans ./assets/ sur GitHub)
+        // =========================================================================
+        const ADMIN_ASSETS_CONFIG = {
+            streetBg: './assets/images/rue.jpg',
+            avatar: './assets/images/avatar.jpg',
+            cyclist: './assets/images/cycliste.png',
+            voiceAudio: './assets/audio/audio-jony.mp4',
+            customTargets: [
+                // Exemple : décommente et adapte si tu veux des cibles automatiques
+                // { name: 'Trottinette', src: './assets/images/trottinette.png', lane: 'road', facing: 'right', points: 220, speed: 250, size: 95 }
+            ]
+        };
+
+        // Clés de stockage local pour persister les médias et préférences
+        const STORAGE_KEY_BG = 'jh_sherif_bg_v1';
+        const STORAGE_KEY_CYCLIST = 'jh_sherif_cyclist_v1';
+        const STORAGE_KEY_AVATAR = 'jh_sherif_avatar_v1';
+        const STORAGE_KEY_VOICE = 'jh_sherif_voice_v1';
+        const STORAGE_KEY_CUSTOM_TARGETS = 'jh_sherif_custom_targets_v1';
+        const STORAGE_KEY_BEST = 'jh_sherif_best_score_v1';
+
+        // Références DOM principales
+        const gameRoot = document.getElementById('gameRoot');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const introScreen = document.getElementById('introScreen');
+        const introAvatarCanvas = document.getElementById('introAvatarCanvas');
+        const introAvatarCtx = introAvatarCanvas.getContext('2d');
+        const startAdventureBtn = document.getElementById('startAdventureBtn');
+        const introLoadAvatarBtn = document.getElementById('introLoadAvatarBtn');
+        const introMusicBtn = document.getElementById('introMusicBtn');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const grenadeDisplay = document.getElementById('grenadeDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const comboBadge = document.getElementById('comboBadge');
+        const comboText = document.getElementById('comboText');
+        const finalScore = document.getElementById('finalScore');
+        const bestScoreDisplay = document.getElementById('bestScoreDisplay');
+        const shoutBanner = document.getElementById('shoutBanner');
+        const shoutBannerTitle = document.getElementById('shoutBannerTitle');
+        const statusToast = document.getElementById('statusToast');
+        const statusToastText = document.getElementById('statusToastText');
+        const customVoiceAudio = document.getElementById('customVoiceAudio');
+        const mobileGrenadeBtn = document.getElementById('mobileGrenadeBtn');
+        const mobileGrenadeCount = document.getElementById('mobileGrenadeCount');
+
+        // État global du jeu
+        let viewWidth = window.innerWidth;
+        let viewHeight = window.innerHeight;
+        let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        let introActive = true;
+        let isTurningToGame = false;
+        let turnProgress = 0; // 0 = face, 1 = dos avec "Johnny"
+        let rockMusicEnabled = true;
+        let rockStepIndex = 0;
+        let rockNextNoteTime = 0;
+        let rockSchedulerId = null;
+
+        let score = 0;
+        let bestScore = Number(localStorage.getItem(STORAGE_KEY_BEST) || 0);
+        let nextShoutMilestone = 10000;
+        let combo = 1;
+        let comboTimer = 0;
+        let timeLeft = 60;
+        let grenadesLeft = 4;
+        let isGameOver = false;
+        let isMuted = false;
+
+        let audioCtx = null;
+        let highwayStarted = false;
+        let highwayNoiseGain = null;
+
+        let spawnTimer = 0.6;
+        let cyclistTimer = 60;
+        let secondAccumulator = 0;
+        let lastTimestamp = performance.now();
+        let screenShake = 0;
+        let shoutBubbleTimer = 0;
+        let toastTimeoutId = null;
+
+        let targets = [];
+        let particles = [];
+        let floatingTexts = [];
+        let projectiles = [];
+        let grenades = [];
+        let customTargets = [];
+        let draftCustomTarget = null;
+
+        let streetBgImg = null;
+        let cyclistImg = null;
+        let avatarImg = null;
+
+        const pointer = {
+            x: viewWidth * 0.5,
+            y: viewHeight * 0.55,
+            recoil: 0,
+            muzzleFlash: 0
+        };
+
+        const trashBin = {
+            x: 110,
+            y: 420,
+            shake: 0
+        };
+
+        const jh = {
+            x: 140,
+            y: 440,
+            bobPhase: 0,
+            aimAngle: 0
+        };
+
+        // Catalogue de cibles réalistes par défaut
+        const TARGET_TYPES = [
+            {
+                id: 'sedan',
+                label: 'Berline',
+                lane: 'road',
+                points: 150,
+                baseSpeed: 230,
+                width: 118,
+                height: 54,
+                primaryColor: '#2563eb',
+                accentColor: '#1d4ed8',
+                isVehicle: true,
+                hornType: 'car'
+            },
+            {
+                id: 'sportscar',
+                label: 'Sportive',
+                lane: 'road',
+                points: 220,
+                baseSpeed: 310,
+                width: 124,
+                height: 48,
+                primaryColor: '#dc2626',
+                accentColor: '#991b1b',
+                isVehicle: true,
+                hornType: 'car'
+            },
+            {
+                id: 'truck',
+                label: 'Camion',
+                lane: 'road',
+                points: 300,
+                baseSpeed: 165,
+                width: 162,
+                height: 76,
+                primaryColor: '#d97706',
+                accentColor: '#92400e',
+                isVehicle: true,
+                hornType: 'truck'
+            },
+            {
+                id: 'dog',
+                label: 'Chien',
+                lane: 'sidewalk',
+                points: 120,
+                baseSpeed: 135,
+                width: 58,
+                height: 42,
+                primaryColor: '#92400e',
+                accentColor: '#78350f',
+                isVehicle: false
+            },
+            {
+                id: 'cat',
+                label: 'Chat',
+                lane: 'sidewalk',
+                points: 140,
+                baseSpeed: 155,
+                width: 48,
+                height: 36,
+                primaryColor: '#475569',
+                accentColor: '#1e293b',
+                isVehicle: false
+            },
+            {
+                id: 'bird',
+                label: 'Oiseau',
+                lane: 'sky',
+                points: 180,
+                baseSpeed: 210,
+                width: 46,
+                height: 32,
+                primaryColor: '#f8fafc',
+                accentColor: '#64748b',
+                isVehicle: false
+            }
+        ];
+
+        // Affiche un message discret en bas de l'écran (jamais alert())
+        function showToast(msg, duration = 2600) {
+            if (!statusToast || !statusToastText) return;
+            statusToastText.textContent = msg;
+            statusToast.classList.remove('hidden');
+            if (toastTimeoutId) clearTimeout(toastTimeoutId);
+            toastTimeoutId = setTimeout(() => {
+                statusToast.classList.add('hidden');
+            }, duration);
+        }
+
+        // Vérifie si une fenêtre modale est ouverte
+        function isCustomModalOpen() {
+            const modal = document.getElementById('customTargetsModal');
+            return Boolean(modal && !modal.classList.contains('hidden'));
+        }
+
+        // Initialise le contexte Web Audio et démarre le trafic autoroutier si actif
+        function initAudio() {
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContextClass) {
+                        audioCtx = new AudioContextClass();
+                    }
+                }
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                if (audioCtx && !highwayStarted) {
+                    startHighwayAmbience();
+                }
+            } catch (err) {
+                // Ignore si l'audio est bloqué par le navigateur
+            }
+        }
+
+        // Crée une ambiance continue de circulation autoroutière
+        function startHighwayAmbience() {
+            if (!audioCtx || highwayStarted) return;
+            try {
+                const bufferSize = audioCtx.sampleRate * 2;
+                const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                let lastOut = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    output[i] = (lastOut + 0.04 * white) / 1.04;
+                    lastOut = output[i];
+                    output[i] *= 1.8;
+                }
+
+                const noiseSource = audioCtx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 420;
+
+                highwayNoiseGain = audioCtx.createGain();
+                highwayNoiseGain.gain.value = (!isMuted && !isGameOver) ? 0.045 : 0;
+
+                noiseSource.connect(filter);
+                filter.connect(highwayNoiseGain);
+                highwayNoiseGain.connect(audioCtx.destination);
+                noiseSource.start();
+                highwayStarted = true;
+            } catch (err) {
+                // Ignore
+            }
+        }
+
+        // Met à jour le volume de la circulation selon l'état muet et la fin de partie
+        function updateHighwayGain() {
+            if (!highwayNoiseGain || !audioCtx) return;
+            const targetGain = (!isMuted && !isGameOver) ? 0.045 : 0;
+            highwayNoiseGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.08);
+        }
+
+        // Planificateur de musique Rock'n'Roll sur l'écran d'introduction
+        function scheduleRockStep() {
+            if (!introActive || !rockMusicEnabled || isMuted || !audioCtx) return;
+            try {
+                while (rockNextNoteTime < audioCtx.currentTime + 0.14) {
+                    const step = rockStepIndex % 8;
+                    const bassNotes = [110, 220, 110, 220, 146.83, 293.66, 164.81, 220];
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(bassNotes[step], rockNextNoteTime);
+
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(680, rockNextNoteTime);
+
+                    gain.gain.setValueAtTime(0.06, rockNextNoteTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, rockNextNoteTime + 0.17);
+
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(rockNextNoteTime);
+                    osc.stop(rockNextNoteTime + 0.18);
+
+                    if (step % 2 === 0) {
+                        const riffNotes = [220, 261.63, 293.66, 329.63];
+                        const lead = audioCtx.createOscillator();
+                        const leadGain = audioCtx.createGain();
+                        lead.type = 'square';
+                        lead.frequency.setValueAtTime(riffNotes[(step / 2) % riffNotes.length], rockNextNoteTime);
+                        leadGain.gain.setValueAtTime(0.025, rockNextNoteTime);
+                        leadGain.gain.exponentialRampToValueAtTime(0.001, rockNextNoteTime + 0.22);
+                        lead.connect(leadGain);
+                        leadGain.connect(audioCtx.destination);
+                        lead.start(rockNextNoteTime);
+                        lead.stop(rockNextNoteTime + 0.23);
+                    }
+
+                    rockNextNoteTime += 0.19;
+                    rockStepIndex++;
+                }
+            } catch (err) {
+                // Ignore
+            }
+        }
+
+        function startRockMusicLoop() {
+            if (rockSchedulerId) clearInterval(rockSchedulerId);
+            rockSchedulerId = setInterval(() => {
+                initAudio();
+                scheduleRockStep();
+            }, 60);
+        }
+
+        function stopRockMusicLoop() {
+            if (rockSchedulerId) {
+                clearInterval(rockSchedulerId);
+                rockSchedulerId = null;
+            }
+        }
+
+        // Effets sonores synthétiques (tir, impact, grenade, klaxon, cri)
+        function playSound(type) {
+            if (isMuted) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            try {
+                const now = audioCtx.currentTime;
+                if (type === 'shoot') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(95, now + 0.11);
+                    gain.gain.setValueAtTime(0.16, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.13);
+                } else if (type === 'hit') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(280, now);
+                    osc.frequency.exponentialRampToValueAtTime(640, now + 0.12);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'grenadeThrow') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(420, now + 0.18);
+                    gain.gain.setValueAtTime(0.14, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'explosion') {
+                    const bufferSize = Math.floor(audioCtx.sampleRate * 0.45);
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 1.5);
+                    }
+                    const src = audioCtx.createBufferSource();
+                    src.buffer = buffer;
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(550, now);
+                    filter.frequency.exponentialRampToValueAtTime(85, now + 0.44);
+                    const gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(0.32, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                    src.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    src.start(now);
+                } else if (type === 'hornCar') {
+                    [410, 490].forEach((freq) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(freq, now);
+                        gain.gain.setValueAtTime(0.05, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.25);
+                    });
+                } else if (type === 'hornTruck') {
+                    [135, 175].forEach((freq) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(freq, now);
+                        gain.gain.setValueAtTime(0.08, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.37);
+                    });
+                } else if (type === 'scream') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(780, now);
+                    osc.frequency.linearRampToValueAtTime(1020, now + 0.14);
+                    osc.frequency.exponentialRampToValueAtTime(420, now + 0.55);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.56);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.57);
+                }
+            } catch (err) {
+                // Ignore
+            }
+        }
+
+        // Sélectionne une voix masculine si disponible
+        function pickMaleVoice() {
+            if (!('speechSynthesis' in window)) return null;
+            const voices = window.speechSynthesis.getVoices() || [];
+            if (!voices.length) return null;
+            const maleKeywords = ['thomas', 'henri', 'paul', 'daniel', 'male', 'man', 'homme', 'nicolas', 'antoine'];
+            const frMale = voices.find(v => /fr/i.test(v.lang) && maleKeywords.some(k => v.name.toLowerCase().includes(k)));
+            if (frMale) return frMale;
+            const anyMale = voices.find(v => maleKeywords.some(k => v.name.toLowerCase().includes(k)));
+            if (anyMale) return anyMale;
+            return voices.find(v => /fr/i.test(v.lang)) || voices[0];
+        }
+
+        // Déclenche le cri "Fuck Johnny" (fichier audio personnalisé ou voix masculine)
+        function triggerJonhyShout() {
+            shoutBubbleTimer = 2.6;
+            screenShake = 14;
+            if (shoutBanner && shoutBannerTitle) {
+                shoutBannerTitle.textContent = "Fuck Johnny !!";
+                shoutBanner.classList.remove('hidden');
+                setTimeout(() => {
+                    shoutBanner.classList.add('hidden');
+                }, 2200);
+            }
+
+            if (isMuted) return;
+
+            if (customVoiceAudio && customVoiceAudio.src) {
+                try {
+                    customVoiceAudio.currentTime = 0;
+                    customVoiceAudio.play().catch(() => {});
+                    return;
+                } catch (err) {
+                    // Repli sur la synthèse vocale
+                }
+            }
+
+            try {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utter = new SpeechSynthesisUtterance("Fuck Johnny");
+                    utter.lang = 'en-US';
+                    utter.pitch = 0.62;
+                    utter.rate = 1.05;
+                    utter.volume = 1.0;
+                    const maleVoice = pickMaleVoice();
+                    if (maleVoice) utter.voice = maleVoice;
+                    window.speechSynthesis.speak(utter);
+                }
+            } catch (err) {
+                // Ignore
+            }
+        }
+
+        // Cri de douleur de la cycliste lorsqu'elle est touchée
+        function triggerCyclistPainCry() {
+            playSound('scream');
+            screenShake = 11;
+            try {
+                if (!isMuted && 'speechSynthesis' in window) {
+                    const utter = new SpeechSynthesisUtterance("Aïeeee ! Pas le vélo !");
+                    utter.lang = 'fr-FR';
+                    utter.pitch = 1.45;
+                    utter.rate = 1.15;
+                    window.speechSynthesis.speak(utter);
+                }
+            } catch (err) {
+                // Ignore
+            }
+        }
+
+        // Ajoute des points et vérifie le palier des 10000 points
+        function addScore(points, x, y, customLabel = null) {
+            if (isGameOver) return;
+            const gained = points * (points > 0 ? combo : 1);
+            score = Math.max(0, score + gained);
+            scoreDisplay.textContent = String(score);
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem(STORAGE_KEY_BEST, String(bestScore));
+            }
+
+            floatingTexts.push({
+                x,
+                y,
+                text: customLabel || (gained >= 0 ? `+${gained}` : `${gained}`),
+                color: gained >= 0 ? '#facc15' : '#ef4444',
+                life: 1.05,
+                vy: -55
+            });
+
+            while (score >= nextShoutMilestone) {
+                triggerJonhyShout();
+                nextShoutMilestone += 10000;
+            }
+        }
+
+        // Redimensionne le canvas principal et recalcule les positions des éléments du décor
+        function resizeCanvas() {
+            viewWidth = window.innerWidth;
+            viewHeight = window.innerHeight;
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+            canvas.width = Math.floor(viewWidth * dpr);
+            canvas.height = Math.floor(viewHeight * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            jh.x = viewWidth * 0.5;
+            jh.y = Math.max(240, Math.min(viewHeight * 0.72, viewHeight - 130));
+
+            trashBin.x = Math.max(210, Math.min(300, viewWidth * 0.24));
+            trashBin.y = Math.max(230, Math.min(viewHeight * 0.68, viewHeight - 150));
+        }
+
+        // Sauvegarde et applique une image de fond de rue
+        function optimizeAndSaveBackground(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                const maxW = 1600;
+                const maxH = 1000;
+                let w = img.width;
+                let h = img.height;
+                const scale = Math.min(1, maxW / w, maxH / h);
+                w = Math.max(1, Math.round(w * scale));
+                h = Math.max(1, Math.round(h * scale));
+
+                const off = document.createElement('canvas');
+                off.width = w;
+                off.height = h;
+                const octx = off.getContext('2d');
+                octx.drawImage(img, 0, 0, w, h);
+
+                try {
+                    const compressed = off.toDataURL('image/jpeg', 0.82);
+                    localStorage.setItem(STORAGE_KEY_BG, compressed);
+                    const savedImg = new Image();
+                    savedImg.onload = () => {
+                        streetBgImg = savedImg;
+                    };
+                    savedImg.src = compressed;
+                } catch (err) {
+                    streetBgImg = img;
+                }
+            };
+            img.src = dataUrl;
+        }
+
+        // Sauvegarde et applique la photo de la cycliste
+        function optimizeAndSaveCyclist(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                const off = document.createElement('canvas');
+                off.width = 220;
+                off.height = 220;
+                const octx = off.getContext('2d');
+                octx.drawImage(img, 0, 0, 220, 220);
+                try {
+                    const out = off.toDataURL('image/jpeg', 0.85);
+                    localStorage.setItem(STORAGE_KEY_CYCLIST, out);
+                    const loaded = new Image();
+                    loaded.onload = () => { cyclistImg = loaded; };
+                    loaded.src = out;
+                } catch (err) {
+                    cyclistImg = img;
+                }
+            };
+            img.src = dataUrl;
+        }
+
+        // Sauvegarde et applique l'image de l'avatar
+        function optimizeAndSaveAvatar(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                const off = document.createElement('canvas');
+                off.width = 360;
+                off.height = 360;
+                const octx = off.getContext('2d');
+                octx.drawImage(img, 0, 0, 360, 360);
+                try {
+                    const out = off.toDataURL('image/jpeg', 0.86);
+                    localStorage.setItem(STORAGE_KEY_AVATAR, out);
+                    const loaded = new Image();
+                    loaded.onload = () => { avatarImg = loaded; };
+                    loaded.src = out;
+                } catch (err) {
+                    avatarImg = img;
+                }
+            };
+            img.src = dataUrl;
+        }
+
+        // Charge une image optionnelle depuis le dossier ./assets/ sans bloquer si absente
+        function tryLoadAdminAssetImage(url, onReady) {
+            if (!url) return;
+            const img = new Image();
+            img.onload = () => onReady(img);
+            img.onerror = () => {};
+            img.src = url;
+        }
+
+        // Charge les médias sauvegardés ou configurés dans ./assets/ au démarrage
+        function initBackground() {
+            const savedBg = localStorage.getItem(STORAGE_KEY_BG);
+            if (savedBg) {
+                const img = new Image();
+                img.onload = () => { streetBgImg = img; };
+                img.src = savedBg;
+            } else if (ADMIN_ASSETS_CONFIG.streetBg) {
+                tryLoadAdminAssetImage(ADMIN_ASSETS_CONFIG.streetBg, (img) => {
+                    if (!streetBgImg) streetBgImg = img;
+                });
+            }
+
+            const savedCyclist = localStorage.getItem(STORAGE_KEY_CYCLIST);
+            if (savedCyclist) {
+                const img = new Image();
+                img.onload = () => { cyclistImg = img; };
+                img.src = savedCyclist;
+            } else if (ADMIN_ASSETS_CONFIG.cyclist) {
+                tryLoadAdminAssetImage(ADMIN_ASSETS_CONFIG.cyclist, (img) => {
+                    if (!cyclistImg) cyclistImg = img;
+                });
+            }
+
+            const savedAvatar = localStorage.getItem(STORAGE_KEY_AVATAR);
+            if (savedAvatar) {
+                const img = new Image();
+                img.onload = () => { avatarImg = img; };
+                img.src = savedAvatar;
+            } else if (ADMIN_ASSETS_CONFIG.avatar) {
+                tryLoadAdminAssetImage(ADMIN_ASSETS_CONFIG.avatar, (img) => {
+                    if (!avatarImg) avatarImg = img;
+                });
+            }
+
+            const savedVoice = localStorage.getItem(STORAGE_KEY_VOICE);
+            if (savedVoice && customVoiceAudio) {
+                customVoiceAudio.src = savedVoice;
+            } else if (ADMIN_ASSETS_CONFIG.voiceAudio && customVoiceAudio) {
+                customVoiceAudio.src = ADMIN_ASSETS_CONFIG.voiceAudio;
+            }
+        }
+
+        // Détoure le fond uni/clair connecté aux bords d'une image personnalisée
+        function removeConnectedBackground(img) {
+            const w = Math.min(260, img.width || 160);
+            const h = Math.min(220, img.height || 120);
+            const off = document.createElement('canvas');
+            off.width = w;
+            off.height = h;
+            const octx = off.getContext('2d');
+            octx.drawImage(img, 0, 0, w, h);
+
+            const imageData = octx.getImageData(0, 0, w, h);
+            const data = imageData.data;
+
+            const corners = [
+                0,
+                (w - 1) * 4,
+                (h - 1) * w * 4,
+                ((h - 1) * w + (w - 1)) * 4
+            ];
+
+            let bgR = 255, bgG = 255, bgB = 255, count = 0;
+            corners.forEach((idx) => {
+                if (data[idx + 3] > 200) {
+                    bgR += data[idx];
+                    bgG += data[idx + 1];
+                    bgB += data[idx + 2];
+                    count++;
+                }
+            });
+            if (count > 0) {
+                bgR /= count;
+                bgG /= count;
+                bgB /= count;
+            }
+
+            const visited = new Uint8Array(w * h);
+            const queue = [];
+            const tolerance = 42;
+
+            function colorDiff(pIdx) {
+                const dr = data[pIdx] - bgR;
+                const dg = data[pIdx + 1] - bgG;
+                const db = data[pIdx + 2] - bgB;
+                return Math.sqrt(dr * dr + dg * dg + db * db);
+            }
+
+            for (let x = 0; x < w; x++) {
+                queue.push(x, (h - 1) * w + x);
+            }
+            for (let y = 0; y < h; y++) {
+                queue.push(y * w, y * w + (w - 1));
+            }
+
+            while (queue.length > 0) {
+                const pos = queue.pop();
+                if (pos < 0 || pos >= w * h || visited[pos]) continue;
+                visited[pos] = 1;
+                const pIdx = pos * 4;
+                if (colorDiff(pIdx) <= tolerance) {
+                    data[pIdx + 3] = 0;
+                    const x = pos % w;
+                    const y = Math.floor(pos / w);
+                    if (x > 0) queue.push(pos - 1);
+                    if (x < w - 1) queue.push(pos + 1);
+                    if (y > 0) queue.push(pos - w);
+                    if (y < h - 1) queue.push(pos + w);
+                }
+            }
+
+            octx.putImageData(imageData, 0, 0);
+
+            octx.save();
+            octx.globalCompositeOperation = 'source-atop';
+            octx.strokeStyle = 'rgba(15, 23, 42, 0.22)';
+            octx.lineWidth = 2;
+            octx.strokeRect(1, 1, w - 2, h - 2);
+            octx.restore();
+
+            return off.toDataURL('image/png');
+        }
+
+        function saveCustomTargets() {
+            try {
+                const serializable = customTargets.map(({ img, ...rest }) => rest);
+                localStorage.setItem(STORAGE_KEY_CUSTOM_TARGETS, JSON.stringify(serializable));
+            } catch (err) {
+                showToast('Stockage plein : supprime une cible personnalisée.');
+            }
+            const badge = document.getElementById('customTargetsCount');
+            if (badge) badge.textContent = String(customTargets.length);
+            renderCustomTargetsList();
+        }
+
+        function loadCustomTargets() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_TARGETS);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        customTargets = parsed.map((item) => {
+                            const img = new Image();
+                            img.src = item.dataUrl;
+                            return { ...item, img };
+                        });
+                    }
+                }
+            } catch (err) {
+                customTargets = [];
+            }
+
+            if (Array.isArray(ADMIN_ASSETS_CONFIG.customTargets)) {
+                ADMIN_ASSETS_CONFIG.customTargets.forEach((cfg, idx) => {
+                    if (!cfg || !cfg.src) return;
+                    const alreadyExists = customTargets.some(c => c.src === cfg.src);
+                    if (alreadyExists) return;
+                    const img = new Image();
+                    img.onload = () => {
+                        const cutoutUrl = removeConnectedBackground(img);
+                        const cutoutImg = new Image();
+                        cutoutImg.onload = () => {
+                            customTargets.push({
+                                id: 'admin_target_' + idx,
+                                name: cfg.name || 'Cible Admin',
+                                label: cfg.name || 'Cible Admin',
+                                lane: cfg.lane || 'road',
+                                facing: cfg.facing || 'right',
+                                points: cfg.points || 200,
+                                speed: cfg.speed || 230,
+                                size: cfg.size || 95,
+                                src: cfg.src,
+                                dataUrl: cutoutUrl,
+                                img: cutoutImg
+                            });
+                            const badge = document.getElementById('customTargetsCount');
+                            if (badge) badge.textContent = String(customTargets.length);
+                            renderCustomTargetsList();
+                        };
+                        cutoutImg.src = cutoutUrl;
+                    };
+                    img.onerror = () => {};
+                    img.src = cfg.src;
+                });
+            }
+
+            const badge = document.getElementById('customTargetsCount');
+            if (badge) badge.textContent = String(customTargets.length);
+            renderCustomTargetsList();
+        }
+
+        function renderCustomTargetsList() {
+            const listEl = document.getElementById('customTargetsList');
+            if (!listEl) return;
+            if (!customTargets.length) {
+                listEl.innerHTML = '<div class="text-xs text-zinc-500 italic py-2">Aucune cible personnalisée enregistrée pour le moment.</div>';
+                return;
+            }
+            listEl.innerHTML = '';
+            customTargets.forEach((ct, index) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-zinc-100 border border-zinc-300 rounded-xl px-3 py-2 text-xs font-bold';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <img src="${ct.dataUrl}" alt="${ct.name}" class="w-10 h-8 object-contain rounded bg-white border border-zinc-300" />
+                        <span>${ct.name}</span>
+                        <span class="text-zinc-500">(${ct.lane} • ${ct.points} pts)</span>
+                    </div>
+                    <button type="button" data-del-idx="${index}" class="bg-rose-500 hover:bg-rose-600 text-white px-2.5 py-1 rounded-lg cursor-pointer">Suppr.</button>
+                `;
+                const delBtn = row.querySelector('button[data-del-idx]');
+                delBtn.addEventListener('click', () => {
+                    customTargets.splice(index, 1);
+                    saveCustomTargets();
+                });
+                listEl.appendChild(row);
+            });
+        }
+
+        function prepareDraftCustomTargetImage(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                const cutoutUrl = removeConnectedBackground(img);
+                const cutoutImg = new Image();
+                cutoutImg.onload = () => {
+                    draftCustomTarget = { dataUrl: cutoutUrl, img: cutoutImg };
+                    const statusEl = document.getElementById('draftImageStatus');
+                    if (statusEl) statusEl.textContent = 'Image détourée prête !';
+                    const prevCanvas = document.getElementById('draftPreviewCanvas');
+                    if (prevCanvas) {
+                        const pctx = prevCanvas.getContext('2d');
+                        pctx.clearRect(0, 0, prevCanvas.width, prevCanvas.height);
+                        const ratio = Math.min(prevCanvas.width / cutoutImg.width, prevCanvas.height / cutoutImg.height);
+                        const dw = cutoutImg.width * ratio;
+                        const dh = cutoutImg.height * ratio;
+                        pctx.drawImage(cutoutImg, (prevCanvas.width - dw) / 2, (prevCanvas.height - dh) / 2, dw, dh);
+                    }
+                };
+                cutoutImg.src = cutoutUrl;
+            };
+            img.src = dataUrl;
+        }
+
+        // Fait apparaître une cible (personnalisée ou réaliste par défaut)
+        function spawnTarget() {
+            const fromLeft = Math.random() < 0.5;
+            const useCustom = customTargets.length > 0 && Math.random() < 0.45;
+
+            if (useCustom) {
+                const ct = customTargets[Math.floor(Math.random() * customTargets.length)];
+                const lane = ct.lane || 'road';
+                let y = viewHeight * 0.68;
+                if (lane === 'sidewalk') y = viewHeight * 0.57;
+                else if (lane === 'sky') y = viewHeight * (0.16 + Math.random() * 0.16);
+                else y = viewHeight * (0.64 + Math.random() * 0.12);
+
+                const size = ct.size || 95;
+                targets.push({
+                    id: ct.id,
+                    label: ct.label,
+                    lane,
+                    points: ct.points || 200,
+                    speed: (ct.speed || 230) * (fromLeft ? 1 : -1),
+                    x: fromLeft ? -size : viewWidth + size,
+                    y,
+                    width: size * 1.15,
+                    height: size * 0.72,
+                    fromLeft,
+                    defaultFacing: ct.facing || 'right',
+                    customImg: ct.img,
+                    isCustom: true,
+                    isCyclist: false,
+                    isVehicle: lane === 'road',
+                    phase: Math.random() * Math.PI * 2,
+                    hitFlash: 0,
+                    hornPlayed: false
+                });
+                return;
+            }
+
+            const tpl = TARGET_TYPES[Math.floor(Math.random() * TARGET_TYPES.length)];
+            let y = viewHeight * 0.68;
+            if (tpl.lane === 'sidewalk') {
+                y = viewHeight * (0.55 + Math.random() * 0.05);
+            } else if (tpl.lane === 'sky') {
+                y = viewHeight * (0.15 + Math.random() * 0.16);
+            } else {
+                y = viewHeight * (0.65 + Math.random() * 0.11);
+            }
+
+            targets.push({
+                ...tpl,
+                x: fromLeft ? -tpl.width : viewWidth + tpl.width,
+                y,
+                speed: tpl.baseSpeed * (fromLeft ? 1 : -1),
+                fromLeft,
+                defaultFacing: 'right',
+                isCustom: false,
+                isCyclist: false,
+                phase: Math.random() * Math.PI * 2,
+                hitFlash: 0,
+                hornPlayed: false
+            });
+        }
+
+        // Fait passer la cycliste toutes les 60 secondes
+        function spawnCyclist() {
+            const fromLeft = Math.random() < 0.5;
+            targets.push({
+                id: 'cyclist_lady',
+                label: 'Cycliste',
+                lane: 'road',
+                points: -1000,
+                speed: 175 * (fromLeft ? 1 : -1),
+                x: fromLeft ? -80 : viewWidth + 80,
+                y: viewHeight * 0.69,
+                width: 76,
+                height: 92,
+                fromLeft,
+                defaultFacing: 'right',
+                isCustom: false,
+                isCyclist: true,
+                isVehicle: false,
+                phase: 0,
+                hitFlash: 0,
+                hornPlayed: true
+            });
+            showToast('🚴 Attention ! Une cycliste passe sur la route (-1000 pts si touchée) !', 3000);
+        }
+
+        // Lance une grenade vers la position cliquée (max 4 par partie)
+        function launchGrenade(targetX, targetY) {
+            if (grenadesLeft <= 0 || isGameOver) return;
+            grenadesLeft--;
+            grenadeDisplay.textContent = grenadesLeft > 0 ? '💣'.repeat(grenadesLeft) : '—';
+            if (mobileGrenadeCount) mobileGrenadeCount.textContent = String(grenadesLeft);
+            playSound('grenadeThrow');
+
+            const startX = jh.x;
+            const startY = jh.y - 26;
+            const dx = targetX - startX;
+            const dy = targetY - startY;
+            const dist = Math.hypot(dx, dy);
+            const flightDuration = Math.max(0.35, Math.min(0.85, dist / 750));
+
+            grenades.push({
+                startX,
+                startY,
+                targetX,
+                targetY,
+                elapsed: 0,
+                duration: flightDuration,
+                arcHeight: Math.max(70, dist * 0.28)
+            });
+        }
+
+        // Déclenche l'explosion d'une grenade dans un rayon donné
+        function detonateGrenade(gx, gy) {
+            playSound('explosion');
+            screenShake = 15;
+
+            for (let i = 0; i < 34; i++) {
+                const angle = (Math.PI * 2 * i) / 34 + Math.random() * 0.2;
+                const spd = 80 + Math.random() * 280;
+                particles.push({
+                    x: gx,
+                    y: gy,
+                    vx: Math.cos(angle) * spd,
+                    vy: Math.sin(angle) * spd - 60,
+                    size: 5 + Math.random() * 8,
+                    color: i % 3 === 0 ? '#ef4444' : (i % 3 === 1 ? '#facc15' : '#fb923c'),
+                    life: 0.55 + Math.random() * 0.35
+                });
+            }
+
+            const blastRadius = 135;
+            for (let i = targets.length - 1; i >= 0; i--) {
+                const t = targets[i];
+                const d = Math.hypot(t.x - gx, t.y - gy);
+                if (d <= blastRadius) {
+                    if (t.isCyclist) {
+                        combo = 1;
+                        comboTimer = 0;
+                        comboBadge.classList.add('hidden');
+                        triggerCyclistPainCry();
+                        addScore(-1000, t.x, t.y - 20, 'AÏE -1000 !');
+                        targets.splice(i, 1);
+                    } else {
+                        combo = Math.min(8, combo + 1);
+                        comboTimer = 3.2;
+                        comboText.textContent = `x${combo} COMBO !`;
+                        comboBadge.classList.remove('hidden');
+                        playSound('hit');
+                        addScore(t.points, t.x, t.y - 15);
+                        targets.splice(i, 1);
+                    }
+                }
+            }
+        }
+
+        // Dessine l'avatar sur l'écran d'introduction ou pendant la rotation
+        function drawAvatarPortrait(targetCtx, w, h, backTurnRatio = 0) {
+            targetCtx.clearRect(0, 0, w, h);
+            const scaleX = Math.max(0.08, Math.abs(Math.cos(backTurnRatio * Math.PI)));
+            const showingBack = backTurnRatio >= 0.5;
+
+            targetCtx.save();
+            targetCtx.translate(w / 2, h / 2);
+            targetCtx.scale(scaleX, 1);
+
+            if (!showingBack) {
+                if (avatarImg) {
+                    targetCtx.drawImage(avatarImg, -w / 2, -h / 2, w, h);
+                } else {
+                    targetCtx.fillStyle = '#2d4739';
+                    targetCtx.fillRect(-w / 2, -h / 2, w, h);
+
+                    targetCtx.fillStyle = '#4b5563';
+                    targetCtx.beginPath();
+                    targetCtx.arc(-w * 0.28, -h * 0.22, w * 0.16, 0, Math.PI * 2);
+                    targetCtx.arc(w * 0.3, -h * 0.26, w * 0.18, 0, Math.PI * 2);
+                    targetCtx.fill();
+
+                    targetCtx.fillStyle = '#4d5d2c';
+                    targetCtx.beginPath();
+                    targetCtx.roundRect(-w * 0.34, h * 0.04, w * 0.68, h * 0.48, 18);
+                    targetCtx.fill();
+
+                    targetCtx.fillStyle = '#fef08a';
+                    targetCtx.font = `900 ${Math.round(w * 0.075)}px Inter, sans-serif`;
+                    targetCtx.textAlign = 'center';
+                    targetCtx.fillText('Willy alias JH', 0, h * 0.24);
+
+                    targetCtx.fillStyle = '#e09f74';
+                    targetCtx.beginPath();
+                    targetCtx.arc(0, -h * 0.16, w * 0.19, 0, Math.PI * 2);
+                    targetCtx.fill();
+
+                    targetCtx.fillStyle = '#5c4033';
+                    targetCtx.beginPath();
+                    targetCtx.arc(0, -h * 0.24, w * 0.21, Math.PI, Math.PI * 2);
+                    targetCtx.fill();
+
+                    targetCtx.fillStyle = '#dc2626';
+                    targetCtx.fillRect(-w * 0.2, -h * 0.25, w * 0.4, h * 0.055);
+
+                    targetCtx.fillStyle = '#18181b';
+                    targetCtx.fillRect(-w * 0.11, -h * 0.18, w * 0.06, 3);
+                    targetCtx.fillRect(w * 0.05, -h * 0.18, w * 0.06, 3);
+                    targetCtx.beginPath();
+                    targetCtx.arc(-w * 0.08, -h * 0.14, 3, 0, Math.PI * 2);
+                    targetCtx.arc(w * 0.08, -h * 0.14, 3, 0, Math.PI * 2);
+                    targetCtx.fill();
+
+                    targetCtx.fillStyle = '#d97706';
+                    targetCtx.fillRect(-w * 0.25, h * 0.06, w * 0.5, h * 0.06);
+                    targetCtx.fillStyle = '#3f3f46';
+                    targetCtx.fillRect(-w * 0.28, h * 0.28, w * 0.64, h * 0.11);
+                }
+            } else {
+                targetCtx.fillStyle = '#1f2937';
+                targetCtx.fillRect(-w / 2, -h / 2, w, h);
+
+                targetCtx.fillStyle = '#3f4e22';
+                targetCtx.beginPath();
+                targetCtx.roundRect(-w * 0.34, -h * 0.02, w * 0.68, h * 0.54, 22);
+                targetCtx.fill();
+                targetCtx.strokeStyle = '#111827';
+                targetCtx.lineWidth = 4;
+                targetCtx.stroke();
+
+                targetCtx.fillStyle = '#d49266';
+                targetCtx.beginPath();
+                targetCtx.arc(0, -h * 0.2, w * 0.18, 0, Math.PI * 2);
+                targetCtx.fill();
+
+                targetCtx.fillStyle = '#4a3525';
+                targetCtx.beginPath();
+                targetCtx.arc(0, -h * 0.25, w * 0.21, Math.PI * 0.85, Math.PI * 2.15);
+                targetCtx.fill();
+
+                targetCtx.fillStyle = '#dc2626';
+                targetCtx.fillRect(-w * 0.21, -h * 0.26, w * 0.42, h * 0.055);
+
+                targetCtx.fillStyle = '#fef08a';
+                targetCtx.strokeStyle = '#18181b';
+                targetCtx.lineWidth = 4;
+                targetCtx.font = `900 ${Math.round(w * 0.13)}px "Bangers", cursive`;
+                targetCtx.textAlign = 'center';
+                targetCtx.strokeText('Johnny', 0, h * 0.23);
+                targetCtx.fillText('Johnny', 0, h * 0.23);
+            }
+
+            targetCtx.restore();
+        }
+
+        // Dessine l'image de rue en plein écran (ou le décor de rue par défaut) et l'ambiance sombre
+        function drawBackground() {
+            if (streetBgImg) {
+                const imgRatio = streetBgImg.width / streetBgImg.height;
+                const viewRatio = viewWidth / viewHeight;
+                let dw = viewWidth;
+                let dh = viewHeight;
+                let dx = 0;
+                let dy = 0;
+                if (viewRatio > imgRatio) {
+                    dh = viewWidth / imgRatio;
+                    dy = (viewHeight - dh) * 0.5;
+                } else {
+                    dw = viewHeight * imgRatio;
+                    dx = (viewWidth - dw) * 0.5;
+                }
+                ctx.drawImage(streetBgImg, dx, dy, dw, dh);
+            } else {
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, viewHeight * 0.55);
+                skyGrad.addColorStop(0, '#38bdf8');
+                skyGrad.addColorStop(0.65, '#bae6fd');
+                skyGrad.addColorStop(1, '#fef9c3');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, viewWidth, viewHeight * 0.55);
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(0, viewHeight * 0.28, viewWidth * 0.32, viewHeight * 0.27);
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(viewWidth * 0.68, viewHeight * 0.31, viewWidth * 0.32, viewHeight * 0.24);
+
+                ctx.fillStyle = '#4ade80';
+                for (let x = viewWidth * 0.34; x < viewWidth * 0.66; x += 75) {
+                    ctx.beginPath();
+                    ctx.arc(x, viewHeight * 0.45, 36, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                const sidewalkY = viewHeight * 0.54;
+                const sidewalkH = viewHeight * 0.09;
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillRect(0, sidewalkY, viewWidth, sidewalkH);
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(0, sidewalkY + sidewalkH - 5, viewWidth, 5);
+
+                const roadY = sidewalkY + sidewalkH;
+                const roadH = viewHeight - roadY;
+                const roadGrad = ctx.createLinearGradient(0, roadY, 0, viewHeight);
+                roadGrad.addColorStop(0, '#334155');
+                roadGrad.addColorStop(1, '#1e293b');
+                ctx.fillStyle = roadGrad;
+                ctx.fillRect(0, roadY, viewWidth, roadH);
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+                ctx.lineWidth = 4;
+                ctx.setLineDash([28, 22]);
+                ctx.beginPath();
+                ctx.moveTo(0, roadY + roadH * 0.5);
+                ctx.lineTo(viewWidth, roadY + roadH * 0.5);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Ambiance sombre et malsaine (vignettage rouge sombre et brume)
+            const vig = ctx.createRadialGradient(
+                viewWidth * 0.5,
+                viewHeight * 0.5,
+                Math.min(viewWidth, viewHeight) * 0.22,
+                viewWidth * 0.5,
+                viewHeight * 0.5,
+                Math.max(viewWidth, viewHeight) * 0.75
+            );
+            vig.addColorStop(0, 'rgba(15, 23, 42, 0.06)');
+            vig.addColorStop(0.65, 'rgba(45, 12, 18, 0.26)');
+            vig.addColorStop(1, 'rgba(9, 9, 11, 0.64)');
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, viewWidth, viewHeight);
+        }
+
+        // Dessine l'avatar tireur de dos au centre-bas de l'écran avec "Johnny" inscrit dans le dos
+        function drawCenterBackAvatar() {
+            const size = Math.max(128, Math.min(196, Math.min(viewWidth, viewHeight) * 0.26));
+            const cx = viewWidth * 0.5;
+            const cy = viewHeight * 0.72 + Math.sin(jh.bobPhase * 0.8) * 3;
+            jh.x = cx;
+            jh.y = cy;
+
+            const aimDx = pointer.x - cx;
+            const aimDy = pointer.y - (cy - size * 0.14);
+            jh.aimAngle = Math.atan2(aimDy, aimDx);
+            const aimLeanX = Math.max(-18, Math.min(18, aimDx * 0.03));
+
+            ctx.save();
+            ctx.translate(cx + aimLeanX, cy);
+
+            const aura = ctx.createRadialGradient(0, 0, size * 0.1, 0, 0, size * 0.68);
+            aura.addColorStop(0, 'rgba(127, 29, 29, 0.34)');
+            aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = aura;
+            ctx.beginPath();
+            ctx.arc(0, 0, size * 0.68, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.58)';
+            ctx.beginPath();
+            ctx.ellipse(0, size * 0.42, size * 0.36, size * 0.085, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#2d3722';
+            ctx.strokeStyle = '#09090b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(-size * 0.29, -size * 0.04, size * 0.58, size * 0.45, 14);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#9c6644';
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.22, size * 0.16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#3b281c';
+            ctx.beginPath();
+            ctx.arc(0, -size * 0.25, size * 0.18, Math.PI * 0.85, Math.PI * 2.15);
+            ctx.fill();
+
+            ctx.fillStyle = '#b91c1c';
+            ctx.fillRect(-size * 0.18, -size * 0.27, size * 0.36, size * 0.05);
+
+            ctx.fillStyle = '#fde047';
+            ctx.strokeStyle = '#09090b';
+            ctx.lineWidth = 3.5;
+            ctx.font = `900 ${Math.max(18, Math.round(size * 0.135))}px "Bangers", cursive`;
+            ctx.textAlign = 'center';
+            ctx.strokeText('Johnny', 0, size * 0.21);
+            ctx.fillText('Johnny', 0, size * 0.21);
+
+            ctx.save();
+            ctx.translate(0, size * 0.08);
+            ctx.rotate(jh.aimAngle);
+            const recoilOffset = -pointer.recoil * 9;
+
+            ctx.fillStyle = '#9c6644';
+            ctx.strokeStyle = '#09090b';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.roundRect(recoilOffset, -6, size * 0.24, 12, 5);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#27272a';
+            ctx.beginPath();
+            ctx.roundRect(recoilOffset + size * 0.16, -5, size * 0.28, 10, 3);
+            ctx.fill();
+            ctx.stroke();
+
+            if (pointer.muzzleFlash > 0) {
+                ctx.fillStyle = 'rgba(250, 204, 21, 0.88)';
+                ctx.beginPath();
+                ctx.arc(recoilOffset + size * 0.47, 0, 12 * pointer.muzzleFlash, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        // Dessine une roue détaillée réaliste
+        function drawRealisticWheel(cx, cy, radius, angle) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.55, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(-radius * 0.5, 0);
+            ctx.lineTo(radius * 0.5, 0);
+            ctx.moveTo(0, -radius * 0.5);
+            ctx.lineTo(0, radius * 0.5);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Dessine la bulle de cri "Fuck Johnny" au-dessus du tireur
+        function drawJH() {
+            if (shoutBubbleTimer <= 0) return;
+            ctx.save();
+            const bob = Math.sin(jh.bobPhase) * 3;
+            ctx.translate(jh.x, jh.y + bob);
+
+            ctx.fillStyle = '#fef08a';
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(-84, -148, 168, 36, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#b91c1c';
+            ctx.font = '900 16px "Bangers", cursive';
+            ctx.textAlign = 'center';
+            ctx.fillText("Fuck Johnny !!", 0, -125);
+
+            ctx.restore();
+        }
+
+        // Dessine la cycliste (photo réelle si chargée, sinon portrait très reconnaissable)
+        function drawCyclistTarget(t) {
+            ctx.save();
+            ctx.translate(t.x, t.y);
+            const flipX = t.speed < 0 ? -1 : 1;
+            ctx.scale(flipX, 1);
+
+            const pedalAngle = t.x * 0.08;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
+            ctx.beginPath();
+            ctx.ellipse(0, 44, 42, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            drawRealisticWheel(-26, 30, 16, pedalAngle);
+            drawRealisticWheel(26, 30, 16, pedalAngle);
+
+            ctx.strokeStyle = '#e11d48';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(-26, 30);
+            ctx.lineTo(-4, 12);
+            ctx.lineTo(20, 12);
+            ctx.lineTo(26, 30);
+            ctx.moveTo(-4, 12);
+            ctx.lineTo(4, 30);
+            ctx.moveTo(20, 12);
+            ctx.lineTo(15, 2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#0e7490';
+            ctx.beginPath();
+            ctx.roundRect(-14, -18, 28, 30, 8);
+            ctx.fill();
+            ctx.strokeStyle = '#164e63';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#7e22ce';
+            ctx.fillRect(-10, -16, 20, 7);
+
+            if (cyclistImg) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(4, -31, 17, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(cyclistImg, -13, -48, 34, 34);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = '#f5cba7';
+                ctx.beginPath();
+                ctx.arc(4, -30, 13, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#18181b';
+                ctx.lineWidth = 1.6;
+                ctx.strokeRect(1, -34, 6, 5);
+                ctx.strokeRect(9, -34, 6, 5);
+            }
+
+            ctx.fillStyle = '#ec4899';
+            const curls = [
+                [-10, -40, 8], [-4, -46, 9], [4, -47, 9], [12, -44, 8], [16, -36, 7], [-13, -32, 7]
+            ];
+            curls.forEach(([cx, cy, r]) => {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.restore();
+        }
+
+        // Dessine une cible réaliste ou personnalisée
+        function drawTarget(t) {
+            if (t.isCyclist) {
+                drawCyclistTarget(t);
+                return;
+            }
+
+            ctx.save();
+            const bobY = t.lane === 'sky' ? Math.sin(t.phase) * 7 : Math.abs(Math.sin(t.phase)) * 3;
+            ctx.translate(t.x, t.y + bobY);
+
+            if (t.isCustom && t.customImg) {
+                const movingLeft = t.speed < 0;
+                const origLeft = t.defaultFacing === 'left';
+                const shouldFlip = movingLeft !== origLeft;
+                ctx.scale(shouldFlip ? -1 : 1, 1);
+
+                if (t.lane !== 'sky') {
+                    const shadowGrad = ctx.createRadialGradient(0, t.height * 0.45, 2, 0, t.height * 0.45, t.width * 0.48);
+                    shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
+                    shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = shadowGrad;
+                    ctx.beginPath();
+                    ctx.ellipse(0, t.height * 0.45, t.width * 0.48, 9, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.save();
+                ctx.globalAlpha = t.lane === 'sky' ? 0.92 : 0.97;
+                ctx.filter = t.lane === 'sky'
+                    ? 'saturate(0.88) brightness(1.04) drop-shadow(0 4px 6px rgba(15, 23, 42, 0.25))'
+                    : 'contrast(1.04) saturate(1.05) drop-shadow(0 3px 5px rgba(15, 23, 42, 0.35))';
+                ctx.drawImage(t.customImg, -t.width / 2, -t.height / 2, t.width, t.height);
+                ctx.restore();
+
+                ctx.save();
+                ctx.globalAlpha = t.lane === 'sky' ? 0.14 : 0.08;
+                ctx.fillStyle = t.lane === 'sky' ? '#e0f2fe' : '#1e293b';
+                ctx.beginPath();
+                ctx.roundRect(-t.width / 2, -t.height / 2, t.width, t.height, 8);
+                ctx.fill();
+                ctx.restore();
+
+                ctx.restore();
+                return;
+            }
+
+            const dir = t.speed < 0 ? -1 : 1;
+            ctx.scale(dir, 1);
+
+            if (t.isVehicle) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+                ctx.beginPath();
+                ctx.ellipse(0, t.height * 0.52, t.width * 0.48, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                const grad = ctx.createLinearGradient(0, -t.height / 2, 0, t.height / 2);
+                grad.addColorStop(0, t.primaryColor);
+                grad.addColorStop(1, t.accentColor);
+
+                ctx.fillStyle = grad;
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 2.5;
+
+                if (t.id === 'truck') {
+                    ctx.beginPath();
+                    ctx.roundRect(-t.width * 0.48, -t.height * 0.48, t.width * 0.68, t.height * 0.72, 6);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.roundRect(t.width * 0.22, -t.height * 0.26, t.width * 0.26, t.height * 0.5, 6);
+                    ctx.fill();
+                    ctx.stroke();
+                } else {
+                    ctx.beginPath();
+                    ctx.roundRect(-t.width * 0.48, -t.height * 0.12, t.width * 0.96, t.height * 0.48, 10);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#bae6fd';
+                    ctx.beginPath();
+                    ctx.moveTo(-t.width * 0.24, -t.height * 0.12);
+                    ctx.lineTo(-t.width * 0.12, -t.height * 0.46);
+                    ctx.lineTo(t.width * 0.18, -t.height * 0.46);
+                    ctx.lineTo(t.width * 0.3, -t.height * 0.12);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(t.width * 0.46, t.height * 0.08, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                const wheelAngle = t.x * 0.06;
+                const wheelR = t.id === 'truck' ? 14 : 11;
+                const wheelY = t.height * 0.4;
+                drawRealisticWheel(-t.width * 0.28, wheelY, wheelR, wheelAngle);
+                drawRealisticWheel(t.width * 0.28, wheelY, wheelR, wheelAngle);
+            } else {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.beginPath();
+                ctx.ellipse(0, t.height * 0.45, t.width * 0.36, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (t.lane === 'sky') {
+                    const wingY = Math.sin(t.phase * 2.2) * 11;
+                    ctx.fillStyle = t.primaryColor;
+                    ctx.strokeStyle = '#334155';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 16, 9, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(-4, -2);
+                    ctx.quadraticCurveTo(2, wingY - 12, 10, wingY);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.moveTo(15, -2);
+                    ctx.lineTo(23, 1);
+                    ctx.lineTo(15, 4);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    const legSwing = Math.sin(t.phase * 1.8) * 5;
+                    ctx.fillStyle = t.primaryColor;
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 2;
+
+                    ctx.beginPath();
+                    ctx.moveTo(-12, 6);
+                    ctx.lineTo(-12 - legSwing, 17);
+                    ctx.moveTo(10, 6);
+                    ctx.lineTo(10 + legSwing, 17);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.ellipse(0, 2, 17, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(15, -6, 9, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(-16, -1);
+                    ctx.quadraticCurveTo(-24, -12 + legSwing, -21, -17);
+                    ctx.stroke();
+                }
+            }
+
+            if (t.hitFlash > 0) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+                ctx.fillRect(-t.width / 2, -t.height / 2, t.width, t.height);
+            }
+
+            ctx.restore();
+        }
+
+        // Dessine les grenades en vol, particules et textes flottants
+        function drawEffects() {
+            grenades.forEach((g) => {
+                const p = Math.min(1, g.elapsed / g.duration);
+                const x = g.startX + (g.targetX - g.startX) * p;
+                const linearY = g.startY + (g.targetY - g.startY) * p;
+                const y = linearY - Math.sin(p * Math.PI) * g.arcHeight;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(p * Math.PI * 4);
+                ctx.fillStyle = '#334155';
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(0, -9, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            projectiles.forEach((pr) => {
+                ctx.save();
+                ctx.strokeStyle = '#fef08a';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(pr.x, pr.y);
+                ctx.lineTo(pr.x - pr.vx * 0.025, pr.y - pr.vy * 0.025);
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            particles.forEach((pt) => {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, pt.life);
+                ctx.fillStyle = pt.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            floatingTexts.forEach((ft) => {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, ft.life);
+                ctx.font = '900 24px "Bangers", cursive';
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 4;
+                ctx.strokeText(ft.text, ft.x, ft.y);
+                ctx.fillStyle = ft.color;
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            });
+        }
+
+        // Dessine le viseur du joueur
+        function drawCrosshair() {
+            if (introActive || isTurningToGame || isGameOver) return;
+            ctx.save();
+            ctx.translate(pointer.x, pointer.y);
+            const r = 16 + pointer.recoil * 6;
+
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(-r - 6, 0);
+            ctx.lineTo(-r + 5, 0);
+            ctx.moveTo(r - 5, 0);
+            ctx.lineTo(r + 6, 0);
+            ctx.moveTo(0, -r - 6);
+            ctx.lineTo(0, -r + 5);
+            ctx.moveTo(0, r - 5);
+            ctx.lineTo(0, r + 6);
+            ctx.stroke();
+
+            if (pointer.muzzleFlash > 0) {
+                ctx.fillStyle = 'rgba(250, 204, 21, 0.7)';
+                ctx.beginPath();
+                ctx.arc(0, 0, 10 * pointer.muzzleFlash, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // Termine la partie et affiche le bilan
+        function finishGame() {
+            if (isGameOver) return;
+            isGameOver = true;
+            updateHighwayGain();
+            finalScore.textContent = String(score);
+            bestScoreDisplay.textContent = String(bestScore);
+            gameOverModal.classList.remove('hidden');
+            gameOverModal.classList.add('flex');
+        }
+
+        // Réinitialise une partie complète
+        function resetGame() {
+            score = 0;
+            nextShoutMilestone = 10000;
+            combo = 1;
+            comboTimer = 0;
+            timeLeft = 60;
+            grenadesLeft = 4;
+            isGameOver = false;
+            spawnTimer = 0.5;
+            cyclistTimer = 60;
+            secondAccumulator = 0;
+            shoutBubbleTimer = 0;
+            screenShake = 0;
+
+            targets = [];
+            particles = [];
+            floatingTexts = [];
+            projectiles = [];
+            grenades = [];
+
+            scoreDisplay.textContent = '0';
+            grenadeDisplay.textContent = '💣💣💣💣';
+            if (mobileGrenadeCount) mobileGrenadeCount.textContent = '4';
+            timeDisplay.textContent = '60s';
+            comboBadge.classList.add('hidden');
+            gameOverModal.classList.add('hidden');
+            gameOverModal.classList.remove('flex');
+            updateHighwayGain();
+        }
+
+        // Boucle principale d'animation et de logique
+        function updateAndRender(now) {
+            const dt = Math.min(0.05, Math.max(0.001, (now - lastTimestamp) / 1000));
+            lastTimestamp = now;
+
+            if (screenShake > 0) {
+                screenShake = Math.max(0, screenShake - dt * 36);
+            }
+            if (shoutBubbleTimer > 0) {
+                shoutBubbleTimer = Math.max(0, shoutBubbleTimer - dt);
+            }
+            if (pointer.recoil > 0) {
+                pointer.recoil = Math.max(0, pointer.recoil - dt * 7);
+            }
+            if (pointer.muzzleFlash > 0) {
+                pointer.muzzleFlash = Math.max(0, pointer.muzzleFlash - dt * 11);
+            }
+            if (trashBin.shake > 0) {
+                trashBin.shake = Math.max(0, trashBin.shake - dt);
+            }
+
+            if (introActive) {
+                drawAvatarPortrait(introAvatarCtx, introAvatarCanvas.width, introAvatarCanvas.height, 0);
+            } else if (isTurningToGame) {
+                turnProgress = Math.min(1, turnProgress + dt * 1.45);
+                drawBackground();
+                drawJH();
+                const turnBoxSize = Math.min(260, Math.min(viewWidth, viewHeight) * 0.42);
+                const turnCanvas = document.createElement('canvas');
+                turnCanvas.width = turnBoxSize;
+                turnCanvas.height = turnBoxSize;
+                drawAvatarPortrait(turnCanvas.getContext('2d'), turnBoxSize, turnBoxSize, turnProgress);
+                ctx.drawImage(turnCanvas, (viewWidth - turnBoxSize) / 2, (viewHeight - turnBoxSize) / 2);
+
+                if (turnProgress >= 1) {
+                    isTurningToGame = false;
+                    resetGame();
+                    spawnTarget();
+                }
+            } else {
+                if (!isGameOver && !isCustomModalOpen()) {
+                    secondAccumulator += dt;
+                    if (secondAccumulator >= 1) {
+                        secondAccumulator -= 1;
+                        timeLeft = Math.max(0, timeLeft - 1);
+                        timeDisplay.textContent = `${timeLeft}s`;
+                        if (timeLeft <= 0) {
+                            finishGame();
+                        }
+                    }
+
+                    if (combo > 1) {
+                        comboTimer -= dt;
+                        if (comboTimer <= 0) {
+                            combo = 1;
+                            comboBadge.classList.add('hidden');
+                        }
+                    }
+
+                    spawnTimer -= dt;
+                    if (spawnTimer <= 0) {
+                        spawnTarget();
+                        spawnTimer = 0.75 + Math.random() * 0.75;
+                    }
+
+                    cyclistTimer -= dt;
+                    if (cyclistTimer <= 0) {
+                        spawnCyclist();
+                        cyclistTimer = 60;
+                    }
+
+                    jh.bobPhase += dt * 4;
+
+                    for (let i = targets.length - 1; i >= 0; i--) {
+                        const t = targets[i];
+                        t.x += t.speed * dt;
+                        t.phase += dt * 7;
+                        if (t.hitFlash > 0) t.hitFlash = Math.max(0, t.hitFlash - dt * 5);
+
+                        if (t.isVehicle && !t.hornPlayed && Math.abs(t.x - viewWidth * 0.5) < 90 && Math.random() < 0.04) {
+                            t.hornPlayed = true;
+                            playSound(t.hornType === 'truck' ? 'hornTruck' : 'hornCar');
+                        }
+
+                        if ((t.speed > 0 && t.x > viewWidth + 190) || (t.speed < 0 && t.x < -190)) {
+                            targets.splice(i, 1);
+                        }
+                    }
+
+                    for (let i = grenades.length - 1; i >= 0; i--) {
+                        const g = grenades[i];
+                        g.elapsed += dt;
+                        if (g.elapsed >= g.duration) {
+                            detonateGrenade(g.targetX, g.targetY);
+                            grenades.splice(i, 1);
+                        }
+                    }
+
+                    for (let i = projectiles.length - 1; i >= 0; i--) {
+                        const pr = projectiles[i];
+                        pr.x += pr.vx * dt;
+                        pr.y += pr.vy * dt;
+                        pr.life -= dt;
+                        if (pr.life <= 0) projectiles.splice(i, 1);
+                    }
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const pt = particles[i];
+                    pt.x += pt.vx * dt;
+                    pt.y += pt.vy * dt;
+                    pt.vy += 320 * dt;
+                    pt.life -= dt;
+                    if (pt.life <= 0) particles.splice(i, 1);
+                }
+
+                for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                    const ft = floatingTexts[i];
+                    ft.y += ft.vy * dt;
+                    ft.life -= dt;
+                    if (ft.life <= 0) floatingTexts.splice(i, 1);
+                }
+
+                ctx.save();
+                if (screenShake > 0) {
+                    const sx = (Math.random() - 0.5) * screenShake;
+                    const sy = (Math.random() - 0.5) * screenShake;
+                    ctx.translate(sx, sy);
+                }
+                drawBackground();
+                targets.forEach(drawTarget);
+                drawCenterBackAvatar();
+                drawJH();
+                drawEffects();
+                drawCrosshair();
+                ctx.restore();
+            }
+
+            requestAnimationFrame(updateAndRender);
+        }
+
+        // Événements d'entrée (clic gauche = tir uniquement, clic droit = grenade uniquement)
+        canvas.addEventListener('pointermove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            pointer.x = e.clientX - rect.left;
+            pointer.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (introActive || isTurningToGame || isGameOver || isCustomModalOpen()) return;
+            initAudio();
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            pointer.x = clickX;
+            pointer.y = clickY;
+
+            if (e.button === 2) {
+                launchGrenade(clickX, clickY);
+                return;
+            }
+
+            if (e.button !== 0) return;
+
+            pointer.recoil = 1;
+            pointer.muzzleFlash = 1;
+            playSound('shoot');
+
+            const muzzleOriginX = jh.x;
+            const muzzleOriginY = jh.y - 16;
+            const angle = Math.atan2(clickY - muzzleOriginY, clickX - muzzleOriginX);
+            projectiles.push({
+                x: muzzleOriginX,
+                y: muzzleOriginY,
+                vx: Math.cos(angle) * 1400,
+                vy: Math.sin(angle) * 1400,
+                life: 0.25
+            });
+
+            let hitSomeone = false;
+            for (let i = targets.length - 1; i >= 0; i--) {
+                const t = targets[i];
+                const halfW = t.width * 0.54;
+                const halfH = t.height * 0.54;
+                if (Math.abs(clickX - t.x) <= halfW && Math.abs(clickY - t.y) <= halfH) {
+                    hitSomeone = true;
+                    if (t.isCyclist) {
+                        combo = 1;
+                        comboTimer = 0;
+                        comboBadge.classList.add('hidden');
+                        triggerCyclistPainCry();
+                        addScore(-1000, t.x, t.y - 20, 'AÏE -1000 !');
+                        targets.splice(i, 1);
+                    } else {
+                        combo = Math.min(8, combo + 1);
+                        comboTimer = 3.2;
+                        comboText.textContent = `x${combo} COMBO !`;
+                        comboBadge.classList.remove('hidden');
+                        playSound('hit');
+
+                        for (let p = 0; p < 12; p++) {
+                            const a = Math.random() * Math.PI * 2;
+                            const sp = 60 + Math.random() * 160;
+                            particles.push({
+                                x: clickX,
+                                y: clickY,
+                                vx: Math.cos(a) * sp,
+                                vy: Math.sin(a) * sp - 40,
+                                size: 4 + Math.random() * 5,
+                                color: '#facc15',
+                                life: 0.45 + Math.random() * 0.25
+                            });
+                        }
+
+                        addScore(t.points, t.x, t.y - 15);
+                        targets.splice(i, 1);
+                    }
+                    break;
+                }
+            }
+
+            if (!hitSomeone && Math.abs(clickX - trashBin.x) < 42 && Math.abs(clickY - trashBin.y) < 48) {
+                trashBin.shake = 0.35;
+                addScore(50, trashBin.x, trashBin.y - 25);
+            }
+        });
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Bouton tactile dédié aux grenades sur téléphone / tablette
+        if (mobileGrenadeBtn) {
+            mobileGrenadeBtn.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (introActive || isTurningToGame || isGameOver || isCustomModalOpen()) return;
+                initAudio();
+                const aimX = pointer.x || viewWidth * 0.55;
+                const aimY = pointer.y || viewHeight * 0.62;
+                launchGrenade(aimX, aimY);
+            });
+        }
+
+        // Boutons de l'écran d'introduction
+        introMusicBtn.addEventListener('click', () => {
+            initAudio();
+            rockMusicEnabled = !rockMusicEnabled;
+            introMusicBtn.textContent = rockMusicEnabled ? '🎸 Musique Rock : ON' : '🎸 Musique Rock : OFF';
+            if (rockMusicEnabled && audioCtx) {
+                rockNextNoteTime = audioCtx.currentTime + 0.05;
+                scheduleRockStep();
+            }
+        });
+
+        introLoadAvatarBtn.addEventListener('click', () => {
+            document.getElementById('avatarFileInput').click();
+        });
+
+        startAdventureBtn.addEventListener('click', () => {
+            initAudio();
+            stopRockMusicLoop();
+            introActive = false;
+            isTurningToGame = true;
+            turnProgress = 0;
+            introScreen.classList.add('hidden');
+        });
+
+        // Boutons de la barre supérieure
+        document.getElementById('uploadBgBtn').addEventListener('click', () => {
+            document.getElementById('bgFileInput').click();
+        });
+        document.getElementById('bgFileInput').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                optimizeAndSaveBackground(ev.target.result);
+                showToast('Photo de rue chargée en plein écran !');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
+
+        document.getElementById('uploadCyclistBtn').addEventListener('click', () => {
+            document.getElementById('cyclistFileInput').click();
+        });
+        document.getElementById('cyclistFileInput').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                optimizeAndSaveCyclist(ev.target.result);
+                showToast('Photo de la cycliste mise à jour !');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
+
+        document.getElementById('avatarFileInput').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                optimizeAndSaveAvatar(ev.target.result);
+                showToast('Avatar chargé !');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
+
+        document.getElementById('uploadVoiceBtn').addEventListener('click', () => {
+            document.getElementById('voiceFileInput').click();
+        });
+        document.getElementById('voiceFileInput').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const dataUrl = ev.target.result;
+                if (customVoiceAudio) customVoiceAudio.src = dataUrl;
+                try {
+                    localStorage.setItem(STORAGE_KEY_VOICE, dataUrl);
+                } catch (err) {
+                    // Ignore si le fichier dépasse le quota localStorage
+                }
+                showToast(`Fichier audio "${file.name}" activé pour la voix !`);
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
+
+        document.getElementById('muteBtn').addEventListener('click', () => {
+            isMuted = !isMuted;
+            document.getElementById('muteBtn').textContent = isMuted ? '🔇' : '🔊';
+            updateHighwayGain();
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            resetGame();
+            spawnTarget();
+        });
+
+        document.getElementById('playAgainBtn').addEventListener('click', () => {
+            resetGame();
+            spawnTarget();
+        });
+
+        // Modale des cibles personnalisées
+        const customModal = document.getElementById('customTargetsModal');
+        document.getElementById('openCustomTargetsBtn').addEventListener('click', () => {
+            customModal.classList.remove('hidden');
+            customModal.classList.add('flex');
+        });
+        document.getElementById('closeCustomTargetsBtn').addEventListener('click', () => {
+            customModal.classList.add('hidden');
+            customModal.classList.remove('flex');
+        });
+        document.getElementById('pickCustomImageBtn').addEventListener('click', () => {
+            document.getElementById('customTargetFileInput').click();
+        });
+        document.getElementById('customTargetFileInput').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => prepareDraftCustomTargetImage(ev.target.result);
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
+
+        document.getElementById('addCustomTargetBtn').addEventListener('click', () => {
+            if (!draftCustomTarget) {
+                showToast('Choisis d’abord une image pour ta cible.');
+                return;
+            }
+            const nameInput = document.getElementById('customTargetName');
+            const laneSelect = document.getElementById('customTargetLane');
+            const facingSelect = document.getElementById('customTargetFacing');
+            const pointsInput = document.getElementById('customTargetPoints');
+            const speedInput = document.getElementById('customTargetSpeed');
+            const sizeInput = document.getElementById('customTargetSize');
+
+            const name = (nameInput.value || '').trim() || 'Cible perso';
+            customTargets.push({
+                id: 'custom_' + Date.now(),
+                name,
+                label: name,
+                lane: laneSelect.value,
+                facing: facingSelect.value,
+                points: Math.max(10, Number(pointsInput.value) || 200),
+                speed: Math.max(50, Number(speedInput.value) || 230),
+                size: Math.max(40, Number(sizeInput.value) || 95),
+                dataUrl: draftCustomTarget.dataUrl,
+                img: draftCustomTarget.img
+            });
+
+            saveCustomTargets();
+            nameInput.value = '';
+            draftCustomTarget = null;
+            document.getElementById('draftImageStatus').textContent = 'Cible ajoutée ! Choisis une autre image.';
+            const prevCanvas = document.getElementById('draftPreviewCanvas');
+            if (prevCanvas) {
+                prevCanvas.getContext('2d').clearRect(0, 0, prevCanvas.width, prevCanvas.height);
+            }
+            showToast(`"${name}" ajoutée au jeu !`);
+        });
+
+        // Glisser-déposer d'une image de rue directement sur le jeu
+        gameRoot.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            gameRoot.classList.add('drop-active');
+        });
+        gameRoot.addEventListener('dragleave', () => {
+            gameRoot.classList.remove('drop-active');
+        });
+        gameRoot.addEventListener('drop', (e) => {
+            e.preventDefault();
+            gameRoot.classList.remove('drop-active');
+            const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                optimizeAndSaveBackground(ev.target.result);
+                showToast('Nouvelle image de rue appliquée en plein écran !');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Collage d'image via Ctrl+V
+        window.addEventListener('paste', (e) => {
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.startsWith('image/')) {
+                    const file = items[i].getAsFile();
+                    if (!file) continue;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        optimizeAndSaveBackground(ev.target.result);
+                        showToast('Image collée en plein écran comme décor de rue !');
+                    };
+                    reader.readAsDataURL(file);
+                    break;
+                }
+            }
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+        }
+
+        // Démarrage propre
+        resizeCanvas();
+        initBackground();
+        loadCustomTargets();
+        startRockMusicLoop();
+        requestAnimationFrame((ts) => {
+            lastTimestamp = ts;
+            updateAndRender(ts);
+        });
+    </script>
+</body>
+</html>
