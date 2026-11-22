@@ -240,9 +240,6 @@
                 <div class="text-[10px] font-black uppercase tracking-wider text-zinc-600">Temps</div>
                 <div id="timeDisplay" class="font-cartoon text-2xl sm:text-3xl leading-none">60s</div>
             </div>
-            <div id="comboBadge" class="hidden bg-rose-500 text-white comic-box rounded-2xl px-3 py-1.5 font-cartoon text-xl sm:text-2xl leading-none">
-                <span id="comboText">x2 COMBO !</span>
-            </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
@@ -363,7 +360,7 @@
                     Règles de la ronde (60 secondes)
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5">
-                    <div><strong>Tir :</strong> Clic ou toucher pour marquer des points (combos).</div>
+                    <div><strong>Tir :</strong> Clic ou toucher pour marquer des points.</div>
                     <div><strong>Grenades (4) :</strong> Clic droit ou bouton GRENADE.</div>
                     <div><strong>Gyrophares &amp; cycliste :</strong> -1000 pts • <strong>Mimi :</strong> -5000 pts.</div>
                     <div><strong>MimiCar :</strong> +3000 pts (toutes les 20s) • 20 000 pts : Master Shooter.</div>
@@ -533,8 +530,6 @@
         const scoreDisplay = document.getElementById('scoreDisplay');
         const grenadeDisplay = document.getElementById('grenadeDisplay');
         const timeDisplay = document.getElementById('timeDisplay');
-        const comboBadge = document.getElementById('comboBadge');
-        const comboText = document.getElementById('comboText');
         const shoutBanner = document.getElementById('shoutBanner');
         const shoutBannerTitle = document.getElementById('shoutBannerTitle');
         const masterShooterBanner = document.getElementById('masterShooterBanner');
@@ -575,8 +570,6 @@
         let scoreHistory = [];
         let grenadesLeft = 4;
         let timeLeft = 60;
-        let combo = 0;
-        let comboTimer = 0;
         let nextShoutThreshold = 10000;
         let nextMasterThreshold = 20000;
         let lastMimiCarSpawnTime = -999;
@@ -614,6 +607,16 @@
         let audioCtx = null;
         let countryMusicTimer = null;
         let trafficNoiseGain = null;
+
+        function showToast(msg, durationMs = 2600) {
+            if (!statusToast || !statusToastText) return;
+            statusToastText.textContent = msg;
+            statusToast.classList.remove('hidden');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                statusToast.classList.add('hidden');
+            }, durationMs);
+        }
 
         function syncBodyGameStateClass() {
             if (gameState === 'playing') {
@@ -679,6 +682,142 @@
                 audioCtx.resume().catch(() => {});
             }
             return audioCtx;
+        }
+
+        function playShotSound() {
+            if (isMuted) return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                const now = ctxAudio.currentTime;
+                // Claquement sec (bruit blanc filtré)
+                const bufferSize = Math.floor(ctxAudio.sampleRate * 0.14);
+                const noiseBuffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctxAudio.sampleRate * 0.032));
+                }
+                const noise = ctxAudio.createBufferSource();
+                noise.buffer = noiseBuffer;
+
+                const bandpass = ctxAudio.createBiquadFilter();
+                bandpass.type = 'bandpass';
+                bandpass.frequency.setValueAtTime(1100, now);
+                bandpass.Q.value = 0.9;
+
+                const noiseGain = ctxAudio.createGain();
+                noiseGain.gain.setValueAtTime(0.38, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
+                noise.connect(bandpass);
+                bandpass.connect(noiseGain);
+                noiseGain.connect(ctxAudio.destination);
+                noise.start(now);
+
+                // Impact grave de la détonation
+                const punch = ctxAudio.createOscillator();
+                const punchGain = ctxAudio.createGain();
+                punch.type = 'triangle';
+                punch.frequency.setValueAtTime(160, now);
+                punch.frequency.exponentialRampToValueAtTime(38, now + 0.11);
+                punchGain.gain.setValueAtTime(0.28, now);
+                punchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                punch.connect(punchGain);
+                punchGain.connect(ctxAudio.destination);
+                punch.start(now);
+                punch.stop(now + 0.13);
+            } catch (err) {}
+        }
+
+        function playExplosionSound() {
+            if (isMuted) return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                const now = ctxAudio.currentTime;
+                const bufferSize = Math.floor(ctxAudio.sampleRate * 0.55);
+                const noiseBuffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctxAudio.sampleRate * 0.16));
+                }
+                const noise = ctxAudio.createBufferSource();
+                noise.buffer = noiseBuffer;
+
+                const lowpass = ctxAudio.createBiquadFilter();
+                lowpass.type = 'lowpass';
+                lowpass.frequency.setValueAtTime(420, now);
+                lowpass.frequency.exponentialRampToValueAtTime(65, now + 0.52);
+
+                const gain = ctxAudio.createGain();
+                gain.gain.setValueAtTime(0.45, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.54);
+
+                noise.connect(lowpass);
+                lowpass.connect(gain);
+                gain.connect(ctxAudio.destination);
+                noise.start(now);
+            } catch (err) {}
+        }
+
+        function playPenaltySound() {
+            if (isMuted) return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                const now = ctxAudio.currentTime;
+                const osc = ctxAudio.createOscillator();
+                const gain = ctxAudio.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.35);
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+                osc.connect(gain);
+                gain.connect(ctxAudio.destination);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch (err) {}
+        }
+
+        function triggerJohnnyShout(text = 'AH QUE JOHNNY !!') {
+            shoutBubbleText = text;
+            shoutBubbleTimer = 2.4;
+            avatarBackTurnTimer = 2.0;
+
+            if (shoutBanner && shoutBannerTitle) {
+                shoutBannerTitle.textContent = text;
+                shoutBanner.classList.remove('hidden');
+                setTimeout(() => {
+                    shoutBanner.classList.add('hidden');
+                }, 2300);
+            }
+
+            if (!isMuted) {
+                if (customVoiceAudio && customVoiceAudio.src) {
+                    customVoiceAudio.currentTime = 0;
+                    customVoiceAudio.play().catch(() => {});
+                } else if ('speechSynthesis' in window) {
+                    try {
+                        const utter = new SpeechSynthesisUtterance('Ah que Johnny !');
+                        utter.lang = 'fr-FR';
+                        utter.pitch = 0.8;
+                        utter.rate = 1.05;
+                        window.speechSynthesis.speak(utter);
+                    } catch (err) {}
+                }
+            }
+        }
+
+        function triggerMasterShooterCelebration(thresholdScore) {
+            masterBannerTimer = 2.8;
+            if (masterShooterBanner && masterShooterSubtext) {
+                masterShooterSubtext.textContent = `${thresholdScore.toLocaleString('fr-FR')} PTS ATTEINTS !`;
+                masterShooterBanner.classList.remove('hidden');
+                setTimeout(() => {
+                    masterShooterBanner.classList.add('hidden');
+                }, 2700);
+            }
         }
 
         function startHighwayTrafficAmbience() {
@@ -839,7 +978,7 @@
         }
 
         /**
-         * Musique country entrainante sur l'écran d'accueil :
+         * Musique country entraînante sur l'écran d'accueil :
          * guitare acoustique brillante + basse alternée « boom-chick » en Sol majeur.
          */
         function playCountryGuitarNote(freq, duration, gainVal = 0.05) {
@@ -941,132 +1080,14 @@
             }, 220);
         }
 
-        /**
-         * Détonation d'arme à feu : claquement sec (bruit filtré) + coup grave percutant.
-         */
-        function playShotSound() {
-            if (isMuted) return;
-            const ctxAudio = ensureAudio();
-            if (!ctxAudio) return;
-            try {
-                const now = ctxAudio.currentTime;
-
-                const bufferSize = Math.floor(ctxAudio.sampleRate * 0.16);
-                const noiseBuffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
-                const data = noiseBuffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 1.8);
-                }
-
-                const noise = ctxAudio.createBufferSource();
-                noise.buffer = noiseBuffer;
-
-                const bandpass = ctxAudio.createBiquadFilter();
-                bandpass.type = 'bandpass';
-                bandpass.frequency.setValueAtTime(1450, now);
-                bandpass.frequency.exponentialRampToValueAtTime(340, now + 0.15);
-                bandpass.Q.value = 0.85;
-
-                const noiseGain = ctxAudio.createGain();
-                noiseGain.gain.setValueAtTime(0.38, now);
-                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-
-                noise.connect(bandpass);
-                bandpass.connect(noiseGain);
-                noiseGain.connect(ctxAudio.destination);
-                noise.start(now);
-
-                const punchOsc = ctxAudio.createOscillator();
-                const punchGain = ctxAudio.createGain();
-                punchOsc.type = 'triangle';
-                punchOsc.frequency.setValueAtTime(220, now);
-                punchOsc.frequency.exponentialRampToValueAtTime(42, now + 0.13);
-
-                punchGain.gain.setValueAtTime(0.32, now);
-                punchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-
-                punchOsc.connect(punchGain);
-                punchGain.connect(ctxAudio.destination);
-                punchOsc.start(now);
-                punchOsc.stop(now + 0.15);
-            } catch (err) {}
-        }
-
-        function playExplosionSound() {
-            if (isMuted) return;
-            const ctxAudio = ensureAudio();
-            if (!ctxAudio) return;
-            try {
-                const now = ctxAudio.currentTime;
-                const bufferSize = Math.floor(ctxAudio.sampleRate * 0.45);
-                const buffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 1.5);
-                }
-                const noise = ctxAudio.createBufferSource();
-                noise.buffer = buffer;
-
-                const filter = ctxAudio.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(520, now);
-                filter.frequency.exponentialRampToValueAtTime(75, now + 0.42);
-
-                const gain = ctxAudio.createGain();
-                gain.gain.setValueAtTime(0.45, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-                noise.connect(filter);
-                filter.connect(gain);
-                gain.connect(ctxAudio.destination);
-                noise.start(now);
-            } catch (err) {}
-        }
-
-        function playPenaltySound() {
-            if (isMuted) return;
-            const ctxAudio = ensureAudio();
-            if (!ctxAudio) return;
-            try {
-                const now = ctxAudio.currentTime;
-                const osc = ctxAudio.createOscillator();
-                const gain = ctxAudio.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.linearRampToValueAtTime(110, now + 0.25);
-                gain.gain.setValueAtTime(0.18, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
-                osc.connect(gain);
-                gain.connect(ctxAudio.destination);
-                osc.start(now);
-                osc.stop(now + 0.27);
-            } catch (err) {}
-        }
-
-        function showToast(msg) {
-            if (!statusToast || !statusToastText) return;
-            statusToastText.textContent = msg;
-            statusToast.classList.remove('hidden');
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                statusToast.classList.add('hidden');
-            }, 3400);
-        }
-
-        function updateAdminAssetDebug() {
-            if (!adminAssetDebugInfo) return;
-            const loadedSpritesCount = customTargetSprites.filter((item) => item && item.img).length;
-            adminAssetDebugInfo.textContent =
-                `Fond: ${loadedStreetSourceLabel} | Avatar: ${loadedAvatarSourceLabel} | ` +
-                `Cycliste: ${cyclistImg ? 'OK' : 'cartoon'} | Véhicules/Animaux: ${loadedSpritesCount}/${ADMIN_ASSETS_CONFIG.customTargets.length} | ` +
-                `Audio: ${customAudioName || 'synthèse vocale'}`;
-        }
-
+        // =====================================================================
+        // GESTION DES SCORES ET DU TOP 10
+        // =====================================================================
         function loadScoreHistory() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY_SCORE_HISTORY);
-                scoreHistory = raw ? JSON.parse(raw) : [];
-                if (!Array.isArray(scoreHistory)) scoreHistory = [];
+                const parsed = raw ? JSON.parse(raw) : [];
+                scoreHistory = Array.isArray(parsed) ? parsed : [];
             } catch (err) {
                 scoreHistory = [];
             }
@@ -1074,238 +1095,122 @@
 
         function saveScoreHistory() {
             try {
-                localStorage.setItem(STORAGE_KEY_SCORE_HISTORY, JSON.stringify(scoreHistory.slice(0, 50)));
+                localStorage.setItem(STORAGE_KEY_SCORE_HISTORY, JSON.stringify(scoreHistory));
             } catch (err) {}
         }
 
         function recordFinishedGame(finalPts) {
-            const nick = getPlayerNickname();
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) +
-                ' ' + now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-            scoreHistory.unshift({ nickname: nick, score: finalPts, date: dateStr });
+            const entry = {
+                nickname: getPlayerNickname(),
+                score: Number(finalPts) || 0,
+                date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+            };
+            scoreHistory.push(entry);
+            scoreHistory.sort((a, b) => b.score - a.score);
             scoreHistory = scoreHistory.slice(0, 50);
             saveScoreHistory();
         }
 
-        function getTop10Entries() {
-            return [...scoreHistory]
-                .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
-                .slice(0, 10);
-        }
-
         function renderScoreHistoryLists() {
-            const top10 = getTop10Entries();
-            const topScore = top10.length > 0 ? Math.max(bestScore, Number(top10[0].score || 0)) : bestScore;
-            if (modalBestScore) modalBestScore.textContent = String(topScore);
+            if (introBestScore) introBestScore.textContent = String(bestScore);
+            if (modalBestScore) modalBestScore.textContent = String(bestScore);
             if (modalGamesCount) modalGamesCount.textContent = String(scoreHistory.length);
-            if (introBestScore) introBestScore.textContent = String(topScore);
 
-            const medals = ['🥇', '🥈', '🥉'];
-            const renderInto = (container) => {
-                if (!container) return;
-                container.innerHTML = '';
+            const top10 = [...scoreHistory].sort((a, b) => b.score - a.score).slice(0, 10);
+            const buildHtml = () => {
                 if (top10.length === 0) {
-                    container.innerHTML = '<div class="text-xs text-zinc-500 italic py-2 text-center">Aucune partie enregistrée pour le moment.</div>';
-                    return;
+                    return '<div class="text-xs text-zinc-500 italic py-2 text-center">Aucun score enregistré pour le moment.</div>';
                 }
-                top10.forEach((entry, index) => {
-                    const row = document.createElement('div');
-                    const isTop1 = index === 0;
-                    const rankLabel = index < 3 ? medals[index] : `#${index + 1}`;
-                    const nickLabel = entry.nickname ? String(entry.nickname) : 'Shérif JH';
-                    row.className = `flex items-center justify-between px-2.5 py-1.5 rounded-xl border ${
-                        isTop1 ? 'bg-amber-200 border-zinc-900 font-black' : 'bg-zinc-50 border-zinc-300 font-semibold'
-                    }`;
-                    row.innerHTML = `
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-6 text-center shrink-0">${rankLabel}</span>
-                            <span class="truncate text-zinc-900 font-extrabold">${nickLabel.replace(/</g, '&lt;')}</span>
-                            <span class="text-[10px] text-zinc-500 shrink-0">${entry.date || ''}</span>
+                return top10.map((item, idx) => {
+                    const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                    return `
+                        <div class="flex items-center justify-between bg-amber-100/80 border border-zinc-300 rounded-xl px-2.5 py-1.5 text-xs font-bold">
+                            <div class="flex items-center gap-2 truncate">
+                                <span class="font-black text-zinc-900 w-6">${medal}</span>
+                                <span class="truncate text-zinc-900">${escapeHtml(item.nickname || 'Shérif JH')}</span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-[10px] text-zinc-500">${escapeHtml(item.date || '')}</span>
+                                <span class="font-cartoon text-base text-red-700">${item.score} pts</span>
+                            </div>
                         </div>
-                        <span class="font-cartoon text-lg text-zinc-900 shrink-0 ml-2">${entry.score} pts</span>
                     `;
-                    container.appendChild(row);
-                });
+                }).join('');
             };
 
-            renderInto(scoresModalList);
-            renderInto(gameOverScoresList);
+            const html = buildHtml();
+            if (scoresModalList) scoresModalList.innerHTML = html;
+            if (gameOverScoresList) gameOverScoresList.innerHTML = html;
         }
 
-        function applyStreetImage(dataUrlOrPath, sourceLabel) {
-            const img = new Image();
-            img.onload = () => {
-                streetBgImg = img;
-                loadedStreetSourceLabel = sourceLabel || dataUrlOrPath;
-                updateAdminAssetDebug();
-            };
-            img.onerror = () => {
-                if (sourceLabel && sourceLabel.startsWith('admin:')) {
-                    tryLoadAdminStreetFallbacks(0);
-                }
-            };
-            img.src = dataUrlOrPath;
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
         }
 
-        function tryLoadAdminStreetFallbacks(index) {
-            const fallbacks = ADMIN_ASSETS_CONFIG.streetBgFallbacks || [];
-            if (index >= fallbacks.length) {
-                loadedStreetSourceLabel = 'Décor cartoon (aucune photo rue trouvée dans assets/images/)';
-                updateAdminAssetDebug();
-                return;
+        // =====================================================================
+        // CHARGEMENT DES MÉDIAS (IMAGES & AUDIO)
+        // =====================================================================
+        function loadImageWithFallback(urls, onSuccess) {
+            let idx = 0;
+            function tryNext() {
+                if (idx >= urls.length) return;
+                const url = urls[idx++];
+                const img = new Image();
+                img.onload = () => onSuccess(img, url);
+                img.onerror = tryNext;
+                img.src = url;
             }
-            const candidatePath = fallbacks[index];
-            const img = new Image();
-            img.onload = () => {
-                streetBgImg = img;
-                loadedStreetSourceLabel = candidatePath;
-                updateAdminAssetDebug();
-            };
-            img.onerror = () => {
-                tryLoadAdminStreetFallbacks(index + 1);
-            };
-            img.src = candidatePath;
-        }
-
-        function applyAvatarImage(dataUrlOrPath, sourceLabel) {
-            const img = new Image();
-            img.onload = () => {
-                avatarImg = img;
-                loadedAvatarSourceLabel = sourceLabel || dataUrlOrPath;
-                updateAdminAssetDebug();
-            };
-            img.onerror = () => {
-                if (sourceLabel === 'admin:primary' && ADMIN_ASSETS_CONFIG.avatarFallback) {
-                    applyAvatarImage(ADMIN_ASSETS_CONFIG.avatarFallback, 'admin:fallback');
-                }
-            };
-            img.src = dataUrlOrPath;
+            tryNext();
         }
 
         function initBackground() {
-            if (ADMIN_ASSETS_CONFIG.streetBg) {
-                applyStreetImage(ADMIN_ASSETS_CONFIG.streetBg, 'admin:primary');
-            }
-            if (ADMIN_ASSETS_CONFIG.avatar) {
-                applyAvatarImage(ADMIN_ASSETS_CONFIG.avatar, 'admin:primary');
-            }
-            if (ADMIN_ASSETS_CONFIG.cyclist) {
-                const cyc = new Image();
-                cyc.onload = () => {
-                    cyclistImg = cyc;
-                    updateAdminAssetDebug();
-                };
-                cyc.src = ADMIN_ASSETS_CONFIG.cyclist;
-            }
-            if (ADMIN_ASSETS_CONFIG.voiceAudio && customVoiceAudio) {
+            loadImageWithFallback(
+                [ADMIN_ASSETS_CONFIG.streetBg, ...(ADMIN_ASSETS_CONFIG.streetBgFallbacks || [])],
+                (img, url) => {
+                    streetBgImg = img;
+                    loadedStreetSourceLabel = url;
+                }
+            );
+            loadImageWithFallback(
+                [ADMIN_ASSETS_CONFIG.avatar, ADMIN_ASSETS_CONFIG.avatarFallback],
+                (img, url) => {
+                    avatarImg = img;
+                    loadedAvatarSourceLabel = url;
+                }
+            );
+            loadImageWithFallback([ADMIN_ASSETS_CONFIG.cyclist], (img) => {
+                cyclistImg = img;
+            });
+            if (customVoiceAudio && ADMIN_ASSETS_CONFIG.voiceAudio) {
                 customVoiceAudio.src = ADMIN_ASSETS_CONFIG.voiceAudio;
                 customAudioName = ADMIN_ASSETS_CONFIG.voiceAudio;
-                updateAdminAssetDebug();
             }
         }
 
         function loadCustomTargets() {
-            customTargetSprites = new Array(ADMIN_ASSETS_CONFIG.customTargets.length).fill(null);
-            ADMIN_ASSETS_CONFIG.customTargets.forEach((cfg, index) => {
+            customTargetSprites = [];
+            (ADMIN_ASSETS_CONFIG.customTargets || []).forEach((cfg) => {
                 const img = new Image();
                 img.onload = () => {
-                    customTargetSprites[index] = {
-                        ...cfg,
-                        img
-                    };
-                    updateAdminAssetDebug();
-                };
-                img.onerror = () => {
-                    customTargetSprites[index] = {
-                        ...cfg,
-                        img: null
-                    };
-                    updateAdminAssetDebug();
+                    customTargetSprites.push({ ...cfg, img });
                 };
                 img.src = cfg.src;
             });
         }
 
-        function triggerJohnnyShout(titleText = 'AH QUE JOHNNY !!') {
-            shoutBubbleText = titleText;
-            shoutBubbleTimer = 2.6;
-            avatarBackTurnTimer = 2.6;
-
-            if (shoutBanner && shoutBannerTitle) {
-                shoutBannerTitle.textContent = titleText;
-                shoutBanner.classList.remove('hidden');
-                setTimeout(() => {
-                    shoutBanner.classList.add('hidden');
-                }, 2400);
-            }
-
-            if (isMuted) return;
-
-            if (customVoiceAudio && customVoiceAudio.src) {
-                try {
-                    customVoiceAudio.currentTime = 0;
-                    customVoiceAudio.play().catch(() => {
-                        speakJohnnyFallback();
-                    });
-                    return;
-                } catch (err) {}
-            }
-            speakJohnnyFallback();
-        }
-
-        function speakJohnnyFallback() {
-            if ('speechSynthesis' in window) {
-                try {
-                    window.speechSynthesis.cancel();
-                    const utter = new SpeechSynthesisUtterance('Ah que Johnny !');
-                    utter.lang = 'fr-FR';
-                    utter.pitch = 0.72;
-                    utter.rate = 0.95;
-                    utter.volume = 1.0;
-                    const voices = window.speechSynthesis.getVoices();
-                    const maleFr = voices.find((v) =>
-                        v.lang.toLowerCase().startsWith('fr') &&
-                        /(thomas|nicolas|paul|henri|daniel|guillaume|male|homme)/i.test(v.name)
-                    ) || voices.find((v) => v.lang.toLowerCase().startsWith('fr'));
-                    if (maleFr) utter.voice = maleFr;
-                    window.speechSynthesis.speak(utter);
-                } catch (err) {}
-            }
-        }
-
-        function triggerMasterShooterCelebration(milestonePts) {
-            masterBannerTimer = 3.0;
-            if (masterShooterBanner && masterShooterSubtext) {
-                masterShooterSubtext.textContent = `${milestonePts.toLocaleString('fr-FR')} PTS ATTEINTS !`;
-                masterShooterBanner.classList.remove('hidden');
-                setTimeout(() => {
-                    masterShooterBanner.classList.add('hidden');
-                }, 2800);
-            }
-            screenShake = Math.max(screenShake, 12);
-            const burstX = width * 0.5;
-            const burstY = height * 0.36;
-            for (let i = 0; i < 48; i++) {
-                const ang = (Math.PI * 2 * i) / 48;
-                const spd = 140 + Math.random() * 280;
-                particles.push({
-                    x: burstX,
-                    y: burstY,
-                    vx: Math.cos(ang) * spd,
-                    vy: Math.sin(ang) * spd - 60,
-                    radius: 4 + Math.random() * 5,
-                    color: i % 3 === 0 ? '#facc15' : i % 3 === 1 ? '#ef4444' : '#38bdf8',
-                    life: 0.95,
-                    maxLife: 0.95
-                });
-            }
-        }
-
+        /**
+         * Repères verticaux de la rue :
+         * - sidewalkY : niveau du sol du trottoir
+         * - roadTopY / roadBottomY : bande de roulement de la chaussée
+         */
         function getLaneGeometry() {
-            const sidewalkY = height * 0.50;
-            const roadTopY = height * 0.56;
-            const roadBottomY = height * 0.78;
+            const sidewalkY = height * 0.56;
+            const roadTopY = height * 0.64;
+            const roadBottomY = height * 0.81;
             return { sidewalkY, roadTopY, roadBottomY };
         }
 
@@ -1319,7 +1224,7 @@
                     type: 'cyclist',
                     name: 'Cycliste (Ne pas tirer !)',
                     x: goRight ? -110 : width + 110,
-                    y: roadTopY + (roadBottomY - roadTopY) * 0.35,
+                    y: roadTopY + (roadBottomY - roadTopY) * 0.42,
                     vx: (goRight ? 1 : -1) * (155 + Math.random() * 45),
                     size: 138,
                     points: -1000,
@@ -1353,14 +1258,14 @@
                 const isSidewalk = picked.lane === 'sidewalk';
                 const goRight = Math.random() < 0.5;
                 const laneY = isSidewalk
-                    ? sidewalkY - 6 + (Math.random() * 14 - 7)
+                    ? sidewalkY + (Math.random() * 10 - 5)
                     : roadTopY + Math.random() * (roadBottomY - roadTopY);
 
                 const isPenalty = (picked.points || 0) < 0;
                 targets.push({
                     type: 'custom',
                     name: picked.name,
-                    x: goRight ? -140 : width + 140,
+                    x: goRight ? -180 : width + 180,
                     y: laneY,
                     vx: (goRight ? 1 : -1) * (picked.speed + Math.random() * 55),
                     size: picked.size,
@@ -1384,7 +1289,7 @@
             const d = defaults[Math.floor(Math.random() * defaults.length)];
             const goRight = Math.random() < 0.5;
             const laneY = d.lane === 'sidewalk'
-                ? sidewalkY - 6
+                ? sidewalkY
                 : roadTopY + Math.random() * (roadBottomY - roadTopY);
 
             targets.push({
@@ -1462,9 +1367,13 @@
             let hitIndex = -1;
             for (let i = targets.length - 1; i >= 0; i--) {
                 const t = targets[i];
+                const drawH = t.img
+                    ? t.size / Math.max(0.65, Math.min(1.85, t.img.width / Math.max(1, t.img.height)))
+                    : t.size * 0.52;
+                const centerY = t.y - drawH * 0.44;
                 const halfW = t.size * 0.54;
-                const halfH = t.size * 0.44;
-                if (Math.abs(x - t.x) <= halfW && Math.abs(y - t.y) <= halfH) {
+                const halfH = drawH * 0.54;
+                if (Math.abs(x - t.x) <= halfW && Math.abs(y - centerY) <= halfH) {
                     hitIndex = i;
                     break;
                 }
@@ -1477,29 +1386,21 @@
                 if (hit.name === 'MimiCar') {
                     playExplosionSound();
                     screenShake = Math.max(screenShake, 14);
-                    spawnImpactParticles(hit.x, hit.y, '#ef4444', 34);
-                    spawnImpactParticles(hit.x, hit.y, '#facc15', 22);
+                    spawnImpactParticles(hit.x, hit.y - 45, '#ef4444', 34);
+                    spawnImpactParticles(hit.x, hit.y - 45, '#facc15', 22);
                 }
 
                 if (hit.isFriendly || hit.points < 0) {
-                    combo = 0;
-                    comboTimer = 0;
                     playPenaltySound();
-                    spawnImpactParticles(hit.x, hit.y, '#f43f5e', 18);
+                    spawnImpactParticles(hit.x, hit.y - 35, '#f43f5e', 18);
                     const penaltyValue = hit.points < 0 ? hit.points : -1000;
-                    addScore(penaltyValue, hit.x, hit.y - 18, `${penaltyValue} ! (${hit.name})`);
+                    addScore(penaltyValue, hit.x, hit.y - 52, `${penaltyValue} ! (${hit.name})`);
                 } else {
-                    combo += 1;
-                    comboTimer = 2.4;
-                    const mult = combo >= 5 ? 2 : combo >= 3 ? 1.5 : 1;
-                    const gained = Math.round(hit.points * mult);
-                    spawnImpactParticles(hit.x, hit.y, hit.color || '#f59e0b', 18);
-                    const label = mult > 1 ? `+${gained} (x${mult})` : `+${gained}`;
-                    addScore(gained, hit.x, hit.y - 14, label);
+                    const gained = Math.round(hit.points);
+                    spawnImpactParticles(hit.x, hit.y - 35, hit.color || '#f59e0b', 18);
+                    addScore(gained, hit.x, hit.y - 48, `+${gained}`);
                 }
             } else {
-                combo = 0;
-                comboTimer = 0;
                 spawnImpactParticles(x, y, '#cbd5e1', 6);
             }
 
@@ -1542,7 +1443,7 @@
 
             for (let i = targets.length - 1; i >= 0; i--) {
                 const t = targets[i];
-                const dist = Math.hypot(t.x - gx, t.y - gy);
+                const dist = Math.hypot(t.x - gx, (t.y - t.size * 0.25) - gy);
                 if (dist <= blastRadius) {
                     targets.splice(i, 1);
                     if (t.isFriendly || t.points < 0) {
@@ -1579,16 +1480,6 @@
                 mobileGrenadeBtn.style.opacity = grenadesLeft > 0 ? '1' : '0.55';
             }
             if (timeDisplay) timeDisplay.textContent = `${Math.ceil(timeLeft)}s`;
-
-            if (comboBadge && comboText) {
-                if (combo >= 2 && comboTimer > 0) {
-                    comboBadge.classList.remove('hidden');
-                    const mult = combo >= 5 ? 'x2' : combo >= 3 ? 'x1.5' : `x${combo}`;
-                    comboText.textContent = `${mult} COMBO !`;
-                } else {
-                    comboBadge.classList.add('hidden');
-                }
-            }
         }
 
         function startNewGame() {
@@ -1601,8 +1492,6 @@
             score = 0;
             grenadesLeft = 4;
             timeLeft = 60;
-            combo = 0;
-            comboTimer = 0;
             nextShoutThreshold = 10000;
             nextMasterThreshold = 20000;
             lastMimiCarSpawnTime = -999;
@@ -1820,36 +1709,47 @@
             ctx.fillStyle = skyGrad;
             ctx.fillRect(0, 0, width, sidewalkY);
 
-            ctx.fillStyle = '#e2e8f0';
-            ctx.fillRect(0, sidewalkY - 120, width, 120);
-
+            // Trottoir
             ctx.fillStyle = '#cbd5e1';
-            ctx.fillRect(0, sidewalkY - 16, width, roadTopY - sidewalkY + 20);
+            ctx.fillRect(0, sidewalkY - 22, width, roadTopY - sidewalkY + 22);
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(0, roadTopY - 8, width, 8);
 
+            // Chaussée
             ctx.fillStyle = '#334155';
-            ctx.fillRect(0, roadTopY, width, roadBottomY - roadTopY + 60);
-
+            ctx.fillRect(0, roadTopY, width, roadBottomY - roadTopY + 34);
             ctx.strokeStyle = '#f8fafc';
-            ctx.lineWidth = 5;
-            ctx.setLineDash([34, 26]);
+            ctx.lineWidth = 4;
+            ctx.setLineDash([28, 22]);
             ctx.beginPath();
             ctx.moveTo(0, (roadTopY + roadBottomY) * 0.52);
             ctx.lineTo(width, (roadTopY + roadBottomY) * 0.52);
             ctx.stroke();
             ctx.setLineDash([]);
 
-            ctx.fillStyle = '#64748b';
-            ctx.fillRect(0, roadBottomY + 60, width, height - roadBottomY);
+            // Bas-côté avant-plan
+            ctx.fillStyle = '#15803d';
+            ctx.fillRect(0, roadBottomY + 34, width, height - (roadBottomY + 34));
         }
 
+        /**
+         * Dessine chaque véhicule ou animal posé par ses roues/pattes sur t.y,
+         * avec ombre de contact au sol et intégration douce dans le décor de la rue.
+         */
         function drawTarget(t) {
             ctx.save();
-            const bob = Math.sin(t.bobPhase) * 3;
-            ctx.translate(t.x, t.y + bob);
+            const bob = Math.sin(t.bobPhase) * 2.2;
+            const groundY = t.y;
+            ctx.translate(t.x, groundY + bob);
 
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
+            // Ombre de contact au sol sous les pneus / pattes
+            const shadowGrad = ctx.createRadialGradient(0, 0, t.size * 0.06, 0, 0, t.size * 0.46);
+            shadowGrad.addColorStop(0, 'rgba(15, 23, 42, 0.48)');
+            shadowGrad.addColorStop(0.65, 'rgba(15, 23, 42, 0.22)');
+            shadowGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+            ctx.fillStyle = shadowGrad;
             ctx.beginPath();
-            ctx.ellipse(0, t.size * 0.34, t.size * 0.42, t.size * 0.11, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, 2, t.size * 0.46, t.size * 0.11, 0, 0, Math.PI * 2);
             ctx.fill();
 
             const movingRight = t.vx >= 0;
@@ -1857,47 +1757,65 @@
             const flipX = (movingRight !== spriteFacesRight) ? -1 : 1;
             ctx.scale(flipX, 1);
 
+            let drawH = t.size * 0.52;
             if (t.img) {
                 const ratio = t.img.width / Math.max(1, t.img.height);
                 const drawW = t.size;
-                const drawH = t.size / Math.max(0.65, Math.min(1.85, ratio));
-                ctx.drawImage(t.img, -drawW * 0.5, -drawH * 0.5, drawW, drawH);
+                drawH = t.size / Math.max(0.65, Math.min(1.85, ratio));
+
+                // Intégration dans le décor : contours adoucis + teinte lumière extérieure
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(-drawW * 0.48, -drawH + 6, drawW * 0.96, drawH - 6, 18);
+                ctx.clip();
+                ctx.filter = 'contrast(0.97) saturate(0.94) brightness(0.98)';
+                ctx.drawImage(t.img, -drawW * 0.5, -drawH + 4, drawW, drawH);
+                ctx.filter = 'none';
+
+                // Légère ombre atmosphérique en bas du véhicule pour le lier à l'asphalte
+                const groundBlend = ctx.createLinearGradient(0, -drawH * 0.28, 0, 4);
+                groundBlend.addColorStop(0, 'rgba(24, 24, 27, 0)');
+                groundBlend.addColorStop(1, 'rgba(24, 24, 27, 0.24)');
+                ctx.fillStyle = groundBlend;
+                ctx.fillRect(-drawW * 0.5, -drawH * 0.28, drawW, drawH * 0.28 + 4);
+                ctx.restore();
             } else {
                 ctx.fillStyle = t.color || '#ef4444';
                 ctx.strokeStyle = '#18181b';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.roundRect(-t.size * 0.45, -t.size * 0.25, t.size * 0.9, t.size * 0.5, 14);
+                ctx.roundRect(-t.size * 0.45, -drawH, t.size * 0.9, drawH * 0.84, 14);
                 ctx.fill();
                 ctx.stroke();
 
                 ctx.fillStyle = '#09090b';
                 ctx.beginPath();
-                ctx.arc(-t.size * 0.26, t.size * 0.25, t.size * 0.12, 0, Math.PI * 2);
-                ctx.arc(t.size * 0.26, t.size * 0.25, t.size * 0.12, 0, Math.PI * 2);
+                ctx.arc(-t.size * 0.26, -t.size * 0.08, t.size * 0.11, 0, Math.PI * 2);
+                ctx.arc(t.size * 0.26, -t.size * 0.08, t.size * 0.11, 0, Math.PI * 2);
                 ctx.fill();
             }
 
             ctx.scale(flipX, 1);
+            const badgeTopY = -drawH - 22;
             if (t.isFriendly || t.points < 0) {
                 const badgeText = t.name === 'Mimi' ? 'MIMI -5000' : t.type === 'cyclist' ? 'CYCLISTE -1000' : 'GYROPHARE -1000';
                 ctx.fillStyle = 'rgba(225, 29, 72, 0.94)';
                 ctx.beginPath();
-                ctx.roundRect(-52, -t.size * 0.56, 104, 20, 8);
+                ctx.roundRect(-52, badgeTopY, 104, 20, 8);
                 ctx.fill();
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '800 10px Inter, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(badgeText, 0, -t.size * 0.56 + 13);
+                ctx.fillText(badgeText, 0, badgeTopY + 13);
             } else if (t.name === 'MimiCar') {
                 ctx.fillStyle = 'rgba(22, 163, 74, 0.95)';
                 ctx.beginPath();
-                ctx.roundRect(-48, -t.size * 0.56, 96, 20, 8);
+                ctx.roundRect(-48, badgeTopY, 96, 20, 8);
                 ctx.fill();
                 ctx.fillStyle = '#fef08a';
                 ctx.font = '900 10px Inter, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('MIMICAR +3000', 0, -t.size * 0.56 + 13);
+                ctx.fillText('MIMICAR +3000', 0, badgeTopY + 13);
             }
 
             ctx.restore();
@@ -1930,10 +1848,6 @@
                 }
             }
 
-            if (comboTimer > 0) {
-                comboTimer -= dt;
-                if (comboTimer <= 0) combo = 0;
-            }
             if (shoutBubbleTimer > 0) shoutBubbleTimer -= dt;
             if (avatarBackTurnTimer > 0) avatarBackTurnTimer -= dt;
             if (masterBannerTimer > 0) masterBannerTimer -= dt;
