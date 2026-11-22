@@ -203,32 +203,32 @@
                 './assets/images/rue.jpeg',
                 './assets/images/rue.JPG',
                 './assets/images/Rue.jpg',
+                './assets/images/JH.jpg',
                 './assets/images/Sans%20titre.jpg',
-                './assets/images/Sans titre.jpg',
-                './assets/images/Gemini_Generated_Image_xnbtp1xnbtp1xnbt.jpg'
+                './assets/images/Sans titre.jpg'
             ],
             avatar: './assets/images/Gemini_Generated_Image_xnbtp1xnbtp1xnbt.jpg',
-            avatarFallback: './assets/images/JH.jpg',
+            avatarFallback: './assets/images/avatar.jpg',
             cyclist: './assets/images/cycliste.png',
             voiceAudio: './assets/audio/audio-jony.mp4',
             customTargets: [
-                { name: 'Camion', src: './assets/images/camion.jpg', lane: 'road', facing: 'right', points: 250, speed: 210, size: 115 },
-                { name: 'Gendarmerie', src: './assets/images/gendarmerie.jpg', lane: 'road', facing: 'right', points: 280, speed: 265, size: 105 },
-                { name: 'Police', src: './assets/images/police.jpg', lane: 'road', facing: 'right', points: 280, speed: 270, size: 105 },
-                { name: 'Pompiers', src: './assets/images/pompiers.jpg', lane: 'road', facing: 'right', points: 270, speed: 255, size: 110 },
-                { name: 'Tracteur', src: './assets/images/tracteur.jpg', lane: 'road', facing: 'right', points: 230, speed: 175, size: 110 },
-                { name: 'Voiture 1', src: './assets/images/voiture1.jpg', lane: 'road', facing: 'right', points: 200, speed: 245, size: 100 },
-                { name: 'Voiture 2', src: './assets/images/voiture2.jpg', lane: 'road', facing: 'right', points: 200, speed: 255, size: 100 },
-                { name: 'Voiture 3', src: './assets/images/voiture3.jpg', lane: 'road', facing: 'right', points: 210, speed: 260, size: 100 },
-                { name: 'Voiture 4', src: './assets/images/voiture4.jpg', lane: 'road', facing: 'right', points: 210, speed: 250, size: 100 },
-                { name: 'Voiture 5', src: './assets/images/voiture5.jpg', lane: 'road', facing: 'right', points: 220, speed: 265, size: 100 },
-                { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'right', points: 220, speed: 275, size: 100 },
-                { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 110 },
+                { name: 'Camion', src: './assets/images/camion.jpg', lane: 'road', facing: 'left', points: 250, speed: 210, size: 115 },
+                { name: 'Gendarmerie', src: './assets/images/gendarmerie.jpg', lane: 'road', facing: 'left', points: 280, speed: 265, size: 105 },
+                { name: 'Police', src: './assets/images/police.jpg', lane: 'road', facing: 'left', points: 280, speed: 270, size: 105 },
+                { name: 'Pompiers', src: './assets/images/pompiers.jpg', lane: 'road', facing: 'left', points: 270, speed: 255, size: 110 },
+                { name: 'Tracteur', src: './assets/images/tracteur.jpg', lane: 'road', facing: 'left', points: 230, speed: 175, size: 110 },
+                { name: 'Voiture 1', src: './assets/images/voiture1.jpg', lane: 'road', facing: 'left', points: 200, speed: 245, size: 100 },
+                { name: 'Voiture 2', src: './assets/images/voiture2.jpg', lane: 'road', facing: 'left', points: 200, speed: 255, size: 100 },
+                { name: 'Voiture 3', src: './assets/images/voiture3.jpg', lane: 'road', facing: 'left', points: 210, speed: 260, size: 100 },
+                { name: 'Voiture 4', src: './assets/images/voiture4.jpg', lane: 'road', facing: 'left', points: 210, speed: 250, size: 100 },
+                { name: 'Voiture 5', src: './assets/images/voiture5.jpg', lane: 'road', facing: 'left', points: 220, speed: 265, size: 100 },
+                { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'left', points: 220, speed: 275, size: 100 },
+                { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'left', points: 240, speed: 220, size: 110 },
                 { name: 'MimiCar', src: './assets/images/mimiCar.jpg', lane: 'road', facing: 'right', points: 230, speed: 240, size: 95 },
                 { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'sidewalk', facing: 'right', points: 150, speed: 130, size: 80 },
                 { name: 'Chat', src: './assets/images/chat.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 190, size: 70 },
                 { name: 'Chien', src: './assets/images/chien.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 205, size: 75 },
-                { name: 'Rat', src: './assets/images/rat.jpg', lane: 'sidewalk', facing: 'right', points: 220, speed: 235, size: 65 },
+                { name: 'Rat', src: './assets/images/rat.jpg', lane: 'sidewalk', facing: 'left', points: 220, speed: 235, size: 65 },
                 { name: 'Écureuil', src: './assets/images/écureuil.jpg', lane: 'sidewalk', facing: 'right', points: 210, speed: 225, size: 70 }
             ]
         };
@@ -779,48 +779,7 @@
             refreshAdminDebugStatus();
         }
 
-        function detectNaturalFacingFromCanvas(canvasEl) {
-            try {
-                const w = canvasEl.width;
-                const h = canvasEl.height;
-                if (w < 8 || h < 8) return 'right';
-                const imgData = canvasEl.getContext('2d').getImageData(0, 0, w, h).data;
-
-                const third = Math.max(1, Math.floor(w / 3));
-                let leftTopSum = 0, leftCols = 0;
-                let rightTopSum = 0, rightCols = 0;
-
-                for (let x = 0; x < w; x++) {
-                    let topY = -1;
-                    for (let y = 0; y < h; y++) {
-                        if (imgData[(y * w + x) * 4 + 3] > 40) {
-                            topY = y;
-                            break;
-                        }
-                    }
-                    if (topY !== -1) {
-                        if (x < third) {
-                            leftTopSum += topY;
-                            leftCols++;
-                        } else if (x >= w - third) {
-                            rightTopSum += topY;
-                            rightCols++;
-                        }
-                    }
-                }
-
-                if (leftCols > 0 && rightCols > 0) {
-                    const avgLeftTop = leftTopSum / leftCols;
-                    const avgRightTop = rightTopSum / rightCols;
-                    if (Math.abs(avgLeftTop - avgRightTop) > h * 0.04) {
-                        return avgLeftTop > avgRightTop ? 'left' : 'right';
-                    }
-                }
-            } catch (err) {}
-            return 'right';
-        }
-
-        function processTargetImageCutout(sourceImg) {
+        function processTargetImageCutout(sourceImg, preferredFacing = 'right') {
             const temp = document.createElement('canvas');
             const maxSide = 260;
             let w = sourceImg.naturalWidth || sourceImg.width || 120;
@@ -835,8 +794,6 @@
             const tctx = temp.getContext('2d');
             tctx.clearRect(0, 0, w, h);
             tctx.drawImage(sourceImg, 0, 0, w, h);
-
-            let detectedFacing = 'right';
 
             try {
                 const imgData = tctx.getImageData(0, 0, w, h);
@@ -856,6 +813,8 @@
                     pushSample(0, y);
                     pushSample(w - 1, y);
                 }
+
+                let bgR = 255, bgG = 255, bgB = 255;
                 if (borderSamples.length > 0) {
                     let sumR = 0, sumG = 0, sumB = 0;
                     for (const [r, g, b] of borderSamples) {
@@ -863,120 +822,124 @@
                         sumG += g;
                         sumB += b;
                     }
-                    const bgR = sumR / borderSamples.length;
-                    const bgG = sumG / borderSamples.length;
-                    const bgB = sumB / borderSamples.length;
-                    const bgIsVeryLight = bgR > 205 && bgG > 205 && bgB > 205;
+                    bgR = sumR / borderSamples.length;
+                    bgG = sumG / borderSamples.length;
+                    bgB = sumB / borderSamples.length;
+                }
 
-                    const visited = new Uint8Array(w * h);
-                    const queue = [];
-                    const tolerance = 96;
-                    const softEdge = 36;
+                const bgIsLight = bgR > 195 && bgG > 195 && bgB > 195;
+                const visited = new Uint8Array(w * h);
+                const queue = [];
+                const tolerance = 95;
+                const softEdge = 32;
 
-                    const getColorDist = (idx) => {
-                        const p = idx * 4;
-                        if (data[p + 3] === 0) return 0;
-                        const dr = data[p] - bgR;
-                        const dg = data[p + 1] - bgG;
-                        const db = data[p + 2] - bgB;
-                        return Math.sqrt(dr * dr + dg * dg + db * db);
-                    };
+                const getColorDist = (idx) => {
+                    const p = idx * 4;
+                    if (data[p + 3] === 0) return 0;
+                    const dr = data[p] - bgR;
+                    const dg = data[p + 1] - bgG;
+                    const db = data[p + 2] - bgB;
+                    return Math.sqrt(dr * dr + dg * dg + db * db);
+                };
 
-                    const enqueueIfBg = (x, y) => {
-                        if (x < 0 || y < 0 || x >= w || y >= h) return;
-                        const idx = y * w + x;
-                        if (visited[idx]) return;
-                        visited[idx] = 1;
-                        if (getColorDist(idx) <= tolerance) {
-                            queue.push(idx);
-                        }
-                    };
-
-                    for (let x = 0; x < w; x++) {
-                        enqueueIfBg(x, 0);
-                        enqueueIfBg(x, h - 1);
+                const enqueueIfBg = (x, y) => {
+                    if (x < 0 || y < 0 || x >= w || y >= h) return;
+                    const idx = y * w + x;
+                    if (visited[idx]) return;
+                    visited[idx] = 1;
+                    if (getColorDist(idx) <= tolerance) {
+                        queue.push(idx);
                     }
-                    for (let y = 0; y < h; y++) {
-                        enqueueIfBg(0, y);
-                        enqueueIfBg(w - 1, y);
-                    }
+                };
 
-                    let head = 0;
-                    while (head < queue.length) {
-                        const idx = queue[head++];
-                        const p = idx * 4;
-                        data[p + 3] = 0;
-                        const x = idx % w;
-                        const y = (idx - x) / w;
-                        if (x > 0) enqueueIfBg(x - 1, y);
-                        if (x < w - 1) enqueueIfBg(x + 1, y);
-                        if (y > 0) enqueueIfBg(x, y - 1);
-                        if (y < h - 1) enqueueIfBg(x, y + 1);
-                        if (x > 0 && y > 0) enqueueIfBg(x - 1, y - 1);
-                        if (x < w - 1 && y > 0) enqueueIfBg(x + 1, y - 1);
-                        if (x > 0 && y < h - 1) enqueueIfBg(x - 1, y + 1);
-                        if (x < w - 1 && y < h - 1) enqueueIfBg(x + 1, y + 1);
-                    }
+                for (let x = 0; x < w; x++) {
+                    enqueueIfBg(x, 0);
+                    enqueueIfBg(x, h - 1);
+                }
+                for (let y = 0; y < h; y++) {
+                    enqueueIfBg(0, y);
+                    enqueueIfBg(w - 1, y);
+                }
 
-                    if (bgIsVeryLight) {
-                        for (let i = 0; i < w * h; i++) {
-                            const p = i * 4;
-                            if (data[p + 3] > 0 && data[p] > 224 && data[p + 1] > 224 && data[p + 2] > 224) {
+                let head = 0;
+                while (head < queue.length) {
+                    const idx = queue[head++];
+                    const p = idx * 4;
+                    data[p + 3] = 0;
+                    const x = idx % w;
+                    const y = (idx - x) / w;
+                    if (x > 0) enqueueIfBg(x - 1, y);
+                    if (x < w - 1) enqueueIfBg(x + 1, y);
+                    if (y > 0) enqueueIfBg(x, y - 1);
+                    if (y < h - 1) enqueueIfBg(x, y + 1);
+                    if (x > 0 && y > 0) enqueueIfBg(x - 1, y - 1);
+                    if (x < w - 1 && y > 0) enqueueIfBg(x + 1, y - 1);
+                    if (x > 0 && y < h - 1) enqueueIfBg(x - 1, y + 1);
+                    if (x < w - 1 && y < h - 1) enqueueIfBg(x + 1, y + 1);
+                }
+
+                // Supprime aussi les poches de fond blanc/gris très clair (vitres, sous caisse, pattes)
+                if (bgIsLight) {
+                    for (let i = 0; i < w * h; i++) {
+                        const p = i * 4;
+                        if (data[p + 3] > 0) {
+                            const r = data[p], g = data[p + 1], b = data[p + 2];
+                            const maxC = Math.max(r, g, b);
+                            const minC = Math.min(r, g, b);
+                            if (maxC > 222 && (maxC - minC) < 22) {
                                 data[p + 3] = 0;
                             }
                         }
                     }
+                }
 
-                    let minX = w, minY = h, maxX = 0, maxY = 0;
-                    let hasOpaque = false;
-                    for (let y = 0; y < h; y++) {
-                        for (let x = 0; x < w; x++) {
-                            const idx = y * w + x;
-                            const p = idx * 4;
-                            if (data[p + 3] > 0) {
-                                const touchesTransparent =
-                                    (x > 0 && data[(idx - 1) * 4 + 3] === 0) ||
-                                    (x < w - 1 && data[(idx + 1) * 4 + 3] === 0) ||
-                                    (y > 0 && data[(idx - w) * 4 + 3] === 0) ||
-                                    (y < h - 1 && data[(idx + w) * 4 + 3] === 0);
-                                if (touchesTransparent) {
-                                    const dist = getColorDist(idx);
-                                    if (dist < tolerance + softEdge) {
-                                        const ratio = Math.max(0, (dist - tolerance * 0.72) / (tolerance * 0.28 + softEdge));
-                                        data[p + 3] = Math.round(data[p + 3] * Math.min(1, ratio));
-                                    }
+                let minX = w, minY = h, maxX = 0, maxY = 0;
+                let hasOpaque = false;
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const idx = y * w + x;
+                        const p = idx * 4;
+                        if (data[p + 3] > 0) {
+                            const touchesTransparent =
+                                (x > 0 && data[(idx - 1) * 4 + 3] === 0) ||
+                                (x < w - 1 && data[(idx + 1) * 4 + 3] === 0) ||
+                                (y > 0 && data[(idx - w) * 4 + 3] === 0) ||
+                                (y < h - 1 && data[(idx + w) * 4 + 3] === 0);
+                            if (touchesTransparent) {
+                                const dist = getColorDist(idx);
+                                if (dist < tolerance + softEdge) {
+                                    const ratio = Math.max(0, (dist - tolerance * 0.72) / (tolerance * 0.28 + softEdge));
+                                    data[p + 3] = Math.round(data[p + 3] * Math.min(1, ratio));
                                 }
-                                if (data[p + 3] > 18) {
-                                    hasOpaque = true;
-                                    if (x < minX) minX = x;
-                                    if (y < minY) minY = y;
-                                    if (x > maxX) maxX = x;
-                                    if (y > maxY) maxY = y;
-                                }
+                            }
+                            if (data[p + 3] > 18) {
+                                hasOpaque = true;
+                                if (x < minX) minX = x;
+                                if (y < minY) minY = y;
+                                if (x > maxX) maxX = x;
+                                if (y > maxY) maxY = y;
                             }
                         }
                     }
+                }
 
-                    tctx.putImageData(imgData, 0, 0);
+                tctx.putImageData(imgData, 0, 0);
 
-                    if (hasOpaque && maxX > minX && maxY > minY) {
-                        const pad = 2;
-                        const cx = Math.max(0, minX - pad);
-                        const cy = Math.max(0, minY - pad);
-                        const cw = Math.min(w - cx, (maxX - minX + 1) + pad * 2);
-                        const ch = Math.min(h - cy, (maxY - minY + 1) + pad * 2);
-                        const cropped = document.createElement('canvas');
-                        cropped.width = cw;
-                        cropped.height = ch;
-                        cropped.getContext('2d').drawImage(temp, cx, cy, cw, ch, 0, 0, cw, ch);
-                        detectedFacing = detectNaturalFacingFromCanvas(cropped);
-                        return { dataUrl: cropped.toDataURL('image/png'), detectedFacing };
-                    }
+                if (hasOpaque && maxX > minX && maxY > minY) {
+                    const pad = 2;
+                    const cx = Math.max(0, minX - pad);
+                    const cy = Math.max(0, minY - pad);
+                    const cw = Math.min(w - cx, (maxX - minX + 1) + pad * 2);
+                    const ch = Math.min(h - cy, (maxY - minY + 1) + pad * 2);
+                    const cropped = document.createElement('canvas');
+                    cropped.width = cw;
+                    cropped.height = ch;
+                    cropped.getContext('2d').drawImage(temp, cx, cy, cw, ch, 0, 0, cw, ch);
+                    return { dataUrl: cropped.toDataURL('image/png'), detectedFacing: preferredFacing };
                 }
             } catch (err) {}
 
-            detectedFacing = detectNaturalFacingFromCanvas(temp);
-            return { dataUrl: temp.toDataURL('image/png'), detectedFacing };
+            return { dataUrl: temp.toDataURL('image/png'), detectedFacing: preferredFacing };
         }
 
         function loadCustomTargets() {
@@ -994,14 +957,13 @@
                 const img = new Image();
                 img.onload = () => {
                     let cutoutUrl = '';
-                    let autoFacing = cfg.facing || 'right';
+                    let resolvedFacing = cfg.facing || 'right';
                     try {
-                        const processed = processTargetImageCutout(img);
+                        const processed = processTargetImageCutout(img, resolvedFacing);
                         cutoutUrl = processed.dataUrl;
-                        autoFacing = processed.detectedFacing || cfg.facing || 'right';
+                        resolvedFacing = processed.detectedFacing || resolvedFacing;
                     } catch (err) {
                         cutoutUrl = cfg.src;
-                        autoFacing = cfg.facing || 'right';
                     }
 
                     const applyFinalImage = (finalImg, finalDataUrl) => {
@@ -1011,7 +973,7 @@
                             name: labelName,
                             label: labelName,
                             lane: cfg.lane || 'road',
-                            facing: autoFacing,
+                            facing: resolvedFacing,
                             points: Number(cfg.points) || 200,
                             speed: Number(cfg.speed) || 230,
                             size: Number(cfg.size) || 95,
