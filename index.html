@@ -242,8 +242,8 @@
         </div>
 
         <div class="pointer-events-auto flex flex-wrap items-center gap-2">
-            <button id="openScoresBtn" type="button" class="comic-btn bg-yellow-200 hover:bg-yellow-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer" title="Voir l'historique des scores">
-                🏆 Scores
+            <button id="openScoresBtn" type="button" class="comic-btn bg-yellow-200 hover:bg-yellow-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer" title="Voir le Top 10 des scores">
+                🏆 Top 10
             </button>
             <button id="muteBtn" type="button" class="comic-btn bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-bold text-sm px-3 py-2 rounded-xl cursor-pointer" title="Couper / activer le son">
                 🔊
@@ -308,64 +308,77 @@
                 </div>
             </div>
 
-            <div>
-                <div class="font-cartoon text-5xl sm:text-7xl text-stone-950 tracking-[0.14em] leading-none drop-shadow-[2px_2px_0px_rgba(255,255,255,0.45)]">
+            <div class="space-y-0.5 pt-0.5">
+                <div class="font-cartoon text-5xl sm:text-6xl text-red-700 leading-none tracking-wider drop-shadow-[2px_2px_0px_rgba(41,24,10,0.35)]">
                     WANTED
                 </div>
-                <h1 class="font-cartoon text-2xl sm:text-4xl text-red-800 leading-tight mt-0.5">
-                    WILLY ALIAS JH — AH QUE JOHNNY
+                <h1 class="font-cartoon text-2xl sm:text-3xl text-stone-950 leading-tight">
+                    WILLY ALIAS JH : LE SHÉRIF DU QUARTIER
                 </h1>
-                <p class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wide text-stone-800">
-                    Recherché pour tapage musical &amp; nettoyage express de la rue
-                </p>
             </div>
 
-            <!-- Zone avatar cliquable et animée style photo d'identité WANTED -->
-            <div class="flex flex-col items-center justify-center bg-gradient-to-b from-slate-800 to-slate-900 border-3 border-stone-950 rounded-xl p-3 shadow-inner relative">
-                <div id="introJokeBubble" class="mb-1.5 bg-yellow-300 text-zinc-950 font-black text-xs px-3 py-1 rounded-full border-2 border-zinc-900 shadow">
-                    Clique sur moi pour me chauffer ! 😎
-                </div>
-                <canvas id="introAvatarCanvas" width="220" height="200" title="Clique pour faire réagir JH !" class="w-40 h-36 sm:w-48 sm:h-44 rounded-lg border-2 border-amber-200/70 cursor-pointer animate-float-slow"></canvas>
-                <div id="adminAssetDebugInfo" class="mt-1 text-[10px] font-semibold text-slate-300"></div>
+            <!-- Champ de saisie obligatoire/pratique du surnom dès l'arrivée -->
+            <div class="bg-amber-100/95 border-2 border-stone-900 rounded-xl p-2.5 flex flex-col sm:flex-row items-center gap-2 text-left">
+                <label for="playerNicknameInput" class="text-xs font-black uppercase text-stone-950 shrink-0">
+                    🤠 Ton surnom :
+                </label>
+                <input
+                    id="playerNicknameInput"
+                    type="text"
+                    maxlength="18"
+                    placeholder="Entre ton surnom (ex. Johnny77)"
+                    class="w-full bg-white text-zinc-950 font-bold text-xs sm:text-sm px-3 py-1.5 rounded-lg border-2 border-stone-900 focus:outline-none focus:ring-2 focus:ring-red-700"
+                />
+            </div>
 
-                <div class="mt-2.5 flex flex-wrap justify-center gap-2">
-                    <button id="introMusicBtn" type="button" class="comic-btn bg-amber-200 hover:bg-amber-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
-                        🎸 Musique Rock : ON
-                    </button>
-                    <button id="introScoresBtn" type="button" class="comic-btn bg-sky-200 hover:bg-sky-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
-                        🏆 Scores
-                    </button>
+            <!-- Portrait encadré de shérif + bulle interactive -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 py-1">
+                <div class="relative bg-amber-950/15 border-2 border-stone-900 rounded-xl p-1.5 shadow-inner">
+                    <canvas id="introAvatarCanvas" width="112" height="100" class="rounded-lg block cursor-pointer" title="Clique sur l'avatar !"></canvas>
+                    <div class="mt-1 bg-stone-900 text-amber-200 font-cartoon text-xs tracking-widest rounded py-0.5">
+                        ALIAS : JH
+                    </div>
+                </div>
+
+                <div class="flex-1 text-left space-y-2 max-w-xs">
+                    <div id="introJokeBubble" class="bg-amber-50/95 border-2 border-stone-900 rounded-xl px-3 py-2 text-xs sm:text-sm font-extrabold text-stone-900 shadow-sm">
+                        Ah Que Johnny à Bouleurs ! 🎸
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="introMusicBtn" type="button" class="comic-btn bg-amber-200 hover:bg-amber-300 text-stone-950 font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
+                            🎸 Musique Rock : ON
+                        </button>
+                        <button id="introScoresBtn" type="button" class="comic-btn bg-yellow-200 hover:bg-yellow-300 text-stone-950 font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
+                            🏆 Top 10
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Règles rapides en encadrés parchemin -->
-            <div class="grid grid-cols-3 gap-2 text-[11px] sm:text-xs font-extrabold">
-                <div class="bg-amber-100/80 border-2 border-stone-900 rounded-lg p-1.5">
-                    <div class="text-base">🔫</div>
-                    <div>Clic / Toucher : Tirer</div>
-                </div>
-                <div class="bg-amber-100/80 border-2 border-stone-900 rounded-lg p-1.5">
-                    <div class="text-base">💣</div>
-                    <div>Clic droit / Bouton : Grenade</div>
-                </div>
-                <div class="bg-red-100/90 border-2 border-red-800 rounded-lg p-1.5 text-red-950">
-                    <div class="text-base">🚴‍♀️</div>
-                    <div>Évite la cycliste !</div>
-                </div>
+            <!-- Règles essentielles concises -->
+            <div class="bg-amber-950/10 border-2 border-stone-900/75 rounded-xl px-3 py-2 text-[11px] sm:text-xs font-bold text-stone-900 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                <span>🎯 Clic / Toucher : Tirer</span>
+                <span>💣 Clic droit / Bouton : Grenade (4)</span>
+                <span>🚨 Police / Gendarmerie / Pompiers : -1000</span>
+                <span>⚡ MimiCar : +3000 (toutes les 20s)</span>
             </div>
 
-            <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-red-700 hover:bg-red-800 text-amber-100 font-cartoon text-3xl sm:text-4xl py-2.5 rounded-xl cursor-pointer tracking-wider">
+            <div id="adminAssetDebugInfo" class="text-[10px] font-semibold text-amber-950/75"></div>
+
+            <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-red-700 hover:bg-red-800 text-amber-100 font-cartoon text-2xl sm:text-3xl py-2.5 rounded-xl cursor-pointer tracking-wider">
                 ▶ WELCOME À BOULEURS CITY
             </button>
         </div>
     </div>
 
-    <!-- Modale d'historique des scores -->
+    <!-- Fenêtre modale du Top 10 des scores -->
     <div id="scoresModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
-        <div class="max-w-lg w-full max-h-[88vh] overflow-y-auto bg-amber-50 comic-box rounded-3xl p-5 sm:p-6 text-zinc-900 space-y-4">
-            <div class="flex items-center justify-between border-b-2 border-zinc-300 pb-3">
-                <h2 class="font-cartoon text-3xl text-zinc-900">🏆 HISTORIQUE DES SCORES</h2>
-                <button id="closeScoresBtn" type="button" class="comic-btn bg-zinc-200 hover:bg-zinc-300 font-black text-sm px-3 py-1 rounded-xl cursor-pointer">✕</button>
+        <div class="max-w-lg w-full bg-amber-50 comic-box rounded-3xl p-5 sm:p-6 text-zinc-900 space-y-4">
+            <div class="flex items-center justify-between border-b-2 border-zinc-900 pb-2">
+                <h2 class="font-cartoon text-3xl sm:text-4xl text-zinc-900">🏆 TOP 10 DES SCORES</h2>
+                <button id="closeScoresBtn" type="button" class="comic-btn bg-rose-400 hover:bg-rose-500 text-zinc-950 font-black text-xs px-3 py-1.5 rounded-xl cursor-pointer">
+                    ✕ Fermer
+                </button>
             </div>
 
             <div class="grid grid-cols-2 gap-3 text-center">
@@ -380,7 +393,7 @@
             </div>
 
             <div>
-                <div class="text-xs font-black uppercase text-zinc-700 mb-1.5">Dernières parties enregistrées</div>
+                <div class="text-xs font-black uppercase text-zinc-700 mb-1.5">Classement Top 10 (Surnom & Score)</div>
                 <div id="scoresModalList" class="space-y-1.5 max-h-64 overflow-y-auto"></div>
             </div>
 
@@ -395,10 +408,13 @@
         </div>
     </div>
 
-    <!-- Écran de fin de partie -->
+    <!-- Écran de fin de partie avec Top 10 -->
     <div id="gameOverModal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/75 p-4">
-        <div class="max-w-md w-full bg-amber-50 comic-box rounded-3xl p-6 text-zinc-900 text-center space-y-4">
-            <h2 class="font-cartoon text-5xl text-zinc-900">FIN DE RONDE !</h2>
+        <div class="max-w-md w-full bg-amber-50 comic-box rounded-3xl p-5 sm:p-6 text-zinc-900 text-center space-y-4">
+            <h2 class="font-cartoon text-4xl sm:text-5xl text-zinc-900 leading-none">FIN DE RONDE !</h2>
+            <div id="gameOverPlayerBadge" class="inline-block bg-amber-200 border-2 border-zinc-900 rounded-full px-3.5 py-1 text-xs font-black text-zinc-900">
+                🤠 Joueur : Shérif JH
+            </div>
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-amber-200 border-2 border-zinc-900 rounded-2xl p-3">
                     <div class="text-xs font-black uppercase">Score final</div>
@@ -410,8 +426,8 @@
                 </div>
             </div>
             <div class="text-left bg-white border-2 border-zinc-900 rounded-2xl p-3">
-                <div class="text-xs font-black uppercase text-zinc-700 mb-1.5">📜 Scores passés</div>
-                <div id="gameOverScoresList" class="space-y-1 max-h-36 overflow-y-auto text-xs"></div>
+                <div class="text-xs font-black uppercase text-zinc-700 mb-1.5">🏅 Tableau des scores — Top 10</div>
+                <div id="gameOverScoresList" class="space-y-1 max-h-48 overflow-y-auto text-xs"></div>
             </div>
             <button id="playAgainBtn" type="button" class="w-full comic-btn bg-amber-400 hover:bg-amber-500 text-zinc-950 font-cartoon text-3xl py-3 rounded-2xl cursor-pointer">
                 ↻ REJOUER UNE PARTIE
@@ -450,7 +466,7 @@
                 { name: 'Voiture 4', src: './assets/images/voiture4.jpg', lane: 'road', facing: 'left', points: 210, speed: 250, size: 164, color: '#8b5cf6' },
                 { name: 'Voiture 5', src: './assets/images/voiture5.jpg', lane: 'road', facing: 'left', points: 220, speed: 265, size: 164, color: '#ec4899' },
                 { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'left', points: 220, speed: 275, size: 164, color: '#64748b' },
-                { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 178, color: '#f8fafc' },
+                { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 248, color: '#f8fafc' },
                 { name: 'MimiCar', src: './assets/images/mimiCar.jpg', lane: 'road', facing: 'right', points: 3000, speed: 520, size: 160, color: '#86efac', cooldownSeconds: 20 },
                 { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'road', facing: 'right', points: 150, speed: 155, size: 132, color: '#334155' },
                 { name: 'Chat', src: './assets/images/chat.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 190, size: 68, color: '#d97706' },
@@ -462,6 +478,7 @@
 
         const STORAGE_KEY_BEST = 'jh_sherif_best_score_v1';
         const STORAGE_KEY_SCORE_HISTORY = 'jh_sherif_score_history_v1';
+        const STORAGE_KEY_NICKNAME = 'jh_sherif_nickname_v1';
 
         const INTRO_JOKES = [
             'Ah Que Johnny à Bouleurs ! 🎸',
@@ -480,11 +497,13 @@
         const introJokeBubble = document.getElementById('introJokeBubble');
         const introScoresBtn = document.getElementById('introScoresBtn');
         const introBestScoreEl = document.getElementById('introBestScore');
+        const playerNicknameInput = document.getElementById('playerNicknameInput');
         const adminAssetDebugInfo = document.getElementById('adminAssetDebugInfo');
         const startAdventureBtn = document.getElementById('startAdventureBtn');
         const introMusicBtn = document.getElementById('introMusicBtn');
         const mobileGrenadeBtn = document.getElementById('mobileGrenadeBtn');
         const gameOverModal = document.getElementById('gameOverModal');
+        const gameOverPlayerBadge = document.getElementById('gameOverPlayerBadge');
         const scoreDisplay = document.getElementById('scoreDisplay');
         const grenadeDisplay = document.getElementById('grenadeDisplay');
         const timeDisplay = document.getElementById('timeDisplay');
@@ -517,6 +536,7 @@
         let score = 0;
         let bestScore = Number(localStorage.getItem(STORAGE_KEY_BEST) || '0') || 0;
         let scoreHistory = [];
+        let playerNickname = 'Shérif JH';
         let timeLeft = 60;
         let grenades = 4;
         const maxGrenades = 4;
@@ -706,7 +726,12 @@
             try {
                 const raw = localStorage.getItem(STORAGE_KEY_SCORE_HISTORY);
                 const parsed = raw ? JSON.parse(raw) : [];
-                scoreHistory = Array.isArray(parsed) ? parsed : [];
+                scoreHistory = Array.isArray(parsed) ? parsed.map((item) => ({
+                    id: item.id || ('score_' + Math.random().toString(36).slice(2, 7)),
+                    nickname: (item.nickname && String(item.nickname).trim()) || 'Anonyme',
+                    score: Number(item.score) || 0,
+                    date: item.date || ''
+                })) : [];
             } catch (err) {
                 scoreHistory = [];
             }
@@ -719,7 +744,34 @@
             if (introBestScoreEl) introBestScoreEl.textContent = String(bestScore);
         }
 
-        function saveScoreEntry(finalPts) {
+        function loadSavedNickname() {
+            let saved = '';
+            try {
+                saved = localStorage.getItem(STORAGE_KEY_NICKNAME) || '';
+            } catch (err) {}
+            playerNickname = saved.trim() || 'Shérif JH';
+            if (playerNicknameInput) {
+                playerNicknameInput.value = saved;
+            }
+        }
+
+        function getCurrentNickname() {
+            const rawVal = playerNicknameInput ? playerNicknameInput.value.trim() : playerNickname;
+            const cleanName = (rawVal || playerNickname || 'Shérif JH').slice(0, 18);
+            playerNickname = cleanName;
+            try {
+                localStorage.setItem(STORAGE_KEY_NICKNAME, cleanName);
+            } catch (err) {}
+            return cleanName;
+        }
+
+        function getTop10Scores() {
+            return [...scoreHistory]
+                .sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0))
+                .slice(0, 10);
+        }
+
+        function saveScoreEntry(finalPts, nickname) {
             const now = new Date();
             const dateLabel = now.toLocaleDateString('fr-FR', {
                 day: '2-digit',
@@ -732,12 +784,13 @@
 
             scoreHistory.unshift({
                 id: 'score_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+                nickname: (nickname || 'Shérif JH').slice(0, 18),
                 score: Number(finalPts) || 0,
                 date: dateLabel
             });
 
-            if (scoreHistory.length > 50) {
-                scoreHistory = scoreHistory.slice(0, 50);
+            if (scoreHistory.length > 100) {
+                scoreHistory = scoreHistory.slice(0, 100);
             }
 
             try {
@@ -746,8 +799,9 @@
         }
 
         function renderScoreHistoryLists() {
-            const topScore = scoreHistory.length > 0
-                ? Math.max(bestScore, ...scoreHistory.map((s) => Number(s.score) || 0))
+            const top10 = getTop10Scores();
+            const topScore = top10.length > 0
+                ? Math.max(bestScore, Number(top10[0].score) || 0)
                 : bestScore;
 
             if (introBestScoreEl) introBestScoreEl.textContent = String(topScore);
@@ -757,29 +811,34 @@
                     return '<div class="text-xs text-zinc-500 italic text-center py-2">' + emptyMsg + '</div>';
                 }
                 return items.map((entry, idx) => {
-                    const isRecord = entry.score === topScore && topScore > 0;
-                    const badge = idx === 0
-                        ? '<span class="text-[10px] font-black bg-amber-300 text-zinc-900 px-1.5 py-0.5 rounded">Dernière</span>'
-                        : '<span class="text-[11px] font-bold text-zinc-400">#' + (idx + 1) + '</span>';
-                    const crown = isRecord ? ' 👑' : '';
-                    return '<div class="flex items-center justify-between gap-2 bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 py-1.5">' +
+                    const rank = idx + 1;
+                    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '#' + rank;
+                    const rowClass = rank === 1
+                        ? 'bg-amber-100 border-amber-400'
+                        : 'bg-zinc-50 border-zinc-200';
+                    const safeNick = String(entry.nickname || 'Shérif JH')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    return '<div class="flex items-center justify-between gap-2 ' + rowClass + ' border rounded-xl px-2.5 py-1.5">' +
                         '<div class="flex items-center gap-2 min-w-0">' +
-                        badge +
-                        '<span class="text-[11px] text-zinc-600 truncate">' + entry.date + '</span>' +
+                        '<span class="text-xs font-black text-zinc-700 shrink-0">' + medal + '</span>' +
+                        '<span class="text-xs font-extrabold text-zinc-900 truncate">' + safeNick + '</span>' +
+                        '<span class="hidden sm:inline text-[10px] text-zinc-500 truncate">' + (entry.date || '') + '</span>' +
                         '</div>' +
-                        '<div class="font-cartoon text-lg text-zinc-900 shrink-0">' + entry.score + ' pts' + crown + '</div>' +
+                        '<div class="font-cartoon text-lg text-zinc-900 shrink-0">' + entry.score + ' pts</div>' +
                         '</div>';
                 }).join('');
             };
 
             const gameOverListEl = document.getElementById('gameOverScoresList');
             if (gameOverListEl) {
-                gameOverListEl.innerHTML = buildHtml(scoreHistory.slice(0, 8), 'Aucune partie précédente enregistrée.');
+                gameOverListEl.innerHTML = buildHtml(top10, 'Aucun score enregistré dans le Top 10.');
             }
 
             const modalListEl = document.getElementById('scoresModalList');
             if (modalListEl) {
-                modalListEl.innerHTML = buildHtml(scoreHistory, 'Joue une partie pour enregistrer ton premier score !');
+                modalListEl.innerHTML = buildHtml(top10, 'Joue une partie pour entrer dans le Top 10 !');
             }
 
             const modalBestEl = document.getElementById('modalBestScore');
@@ -1084,23 +1143,58 @@
             }, 260);
         }
 
+        /**
+         * Détonation d'arme à feu : claquement sec (bruit filtré) + coup grave percutant.
+         */
         function playShotSound() {
             if (isMuted) return;
             const ctxAudio = ensureAudio();
             if (!ctxAudio) return;
             try {
                 const now = ctxAudio.currentTime;
-                const osc = ctxAudio.createOscillator();
-                const gain = ctxAudio.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(220, now);
-                osc.frequency.exponentialRampToValueAtTime(55, now + 0.09);
-                gain.gain.setValueAtTime(0.11, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.095);
-                osc.connect(gain);
-                gain.connect(ctxAudio.destination);
-                osc.start(now);
-                osc.stop(now + 0.1);
+
+                // 1. Claquement sec de poudre / détonation
+                const dur = 0.16;
+                const bufferSize = Math.floor(ctxAudio.sampleRate * dur);
+                const noiseBuffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    const env = Math.pow(1 - i / bufferSize, 1.8);
+                    data[i] = (Math.random() * 2 - 1) * env;
+                }
+                const noiseSrc = ctxAudio.createBufferSource();
+                noiseSrc.buffer = noiseBuffer;
+
+                const bandpass = ctxAudio.createBiquadFilter();
+                bandpass.type = 'bandpass';
+                bandpass.Q.value = 0.85;
+                bandpass.frequency.setValueAtTime(1350, now);
+                bandpass.frequency.exponentialRampToValueAtTime(320, now + dur);
+
+                const noiseGain = ctxAudio.createGain();
+                noiseGain.gain.setValueAtTime(0.45, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+                noiseSrc.connect(bandpass);
+                bandpass.connect(noiseGain);
+                noiseGain.connect(ctxAudio.destination);
+                noiseSrc.start(now);
+                noiseSrc.stop(now + dur + 0.01);
+
+                // 2. Impact grave / recul de canon
+                const punchOsc = ctxAudio.createOscillator();
+                const punchGain = ctxAudio.createGain();
+                punchOsc.type = 'triangle';
+                punchOsc.frequency.setValueAtTime(175, now);
+                punchOsc.frequency.exponentialRampToValueAtTime(36, now + 0.12);
+
+                punchGain.gain.setValueAtTime(0.36, now);
+                punchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+
+                punchOsc.connect(punchGain);
+                punchGain.connect(ctxAudio.destination);
+                punchOsc.start(now);
+                punchOsc.stop(now + 0.14);
             } catch (err) {}
         }
 
@@ -1284,7 +1378,7 @@
             canvas.width = width;
             canvas.height = height;
             player.x = width * 0.5;
-            player.y = isRotatedPortrait ? height * 0.80 : height * 0.86;
+            player.y = isRotatedPortrait ? height * 0.90 : height * 0.89;
             if (player.aimX === 0 && player.aimY === 0) {
                 player.aimX = width * 0.5;
                 player.aimY = height * 0.55;
@@ -1722,6 +1816,7 @@
 
         function startNewGame() {
             ensureAudio();
+            getCurrentNickname();
             score = 0;
             timeLeft = 60;
             grenades = maxGrenades;
@@ -1762,6 +1857,8 @@
             syncBodyGameStateClass();
             updateAmbientTrafficGain();
 
+            const activeNick = getCurrentNickname();
+
             if (score > bestScore) {
                 bestScore = score;
                 try {
@@ -1769,9 +1866,12 @@
                 } catch (err) {}
             }
 
-            saveScoreEntry(score);
+            saveScoreEntry(score, activeNick);
             renderScoreHistoryLists();
 
+            if (gameOverPlayerBadge) {
+                gameOverPlayerBadge.textContent = '🤠 Joueur : ' + activeNick;
+            }
             if (finalScoreEl) finalScoreEl.textContent = String(score);
             if (bestScoreDisplay) bestScoreDisplay.textContent = String(bestScore);
 
@@ -1820,8 +1920,16 @@
                 targetCtx.fill();
                 targetCtx.stroke();
 
-                targetCtx.fillStyle = '#dc2626';
-                targetCtx.fillRect(-18, -33, 36, 6);
+                // Chapeau de cowboy
+                targetCtx.fillStyle = '#78350f';
+                targetCtx.beginPath();
+                targetCtx.ellipse(0, -37, 28, 7, 0, 0, Math.PI * 2);
+                targetCtx.fill();
+                targetCtx.stroke();
+                targetCtx.beginPath();
+                targetCtx.roundRect(-13, -53, 26, 17, 6);
+                targetCtx.fill();
+                targetCtx.stroke();
 
                 if (showBack) {
                     targetCtx.fillStyle = '#fef08a';
@@ -1896,26 +2004,35 @@
             targetCtx.fill();
             targetCtx.stroke();
 
+            // Cheveux et chapeau de cowboy
             targetCtx.fillStyle = '#451a03';
             targetCtx.beginPath();
-            targetCtx.arc(0, -34, 20.5, Math.PI * 0.85, Math.PI * 2.15);
-            targetCtx.lineTo(18, -22);
-            targetCtx.lineTo(-18, -22);
+            targetCtx.arc(0, -33, 19.5, Math.PI * 0.9, Math.PI * 2.1);
+            targetCtx.lineTo(17, -23);
+            targetCtx.lineTo(-17, -23);
             targetCtx.closePath();
             targetCtx.fill();
             targetCtx.stroke();
 
-            targetCtx.fillStyle = '#dc2626';
-            targetCtx.fillRect(-20, -40, 40, 7);
-            const tailWave = Math.sin(totalTime * 10) * 4;
+            // Large bord du chapeau de cowboy
+            targetCtx.fillStyle = '#78350f';
+            targetCtx.strokeStyle = '#18181b';
+            targetCtx.lineWidth = 3;
             targetCtx.beginPath();
-            targetCtx.moveTo(14, -36);
-            targetCtx.quadraticCurveTo(28, -32 + tailWave, 34, -22 + tailWave);
-            targetCtx.lineTo(26, -18 + tailWave);
-            targetCtx.quadraticCurveTo(22, -26 + tailWave, 12, -32);
-            targetCtx.closePath();
+            targetCtx.ellipse(0, -43, 33, 8.5, 0, 0, Math.PI * 2);
             targetCtx.fill();
             targetCtx.stroke();
+
+            // Calotte du chapeau de cowboy
+            targetCtx.fillStyle = '#92400e';
+            targetCtx.beginPath();
+            targetCtx.roundRect(-15, -62, 30, 21, 7);
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            // Bandeau de cuir du chapeau
+            targetCtx.fillStyle = '#29180a';
+            targetCtx.fillRect(-15, -47, 30, 4);
 
             const shoulderX = 14;
             const shoulderY = -2;
@@ -1945,6 +2062,21 @@
             targetCtx.roundRect(-4, 0, 24, 9, 4);
             targetCtx.fill();
             targetCtx.stroke();
+
+            // Flash de détonation au bout du canon
+            if (recoilOffset > 3) {
+                targetCtx.fillStyle = '#fde047';
+                targetCtx.strokeStyle = '#ea580c';
+                targetCtx.lineWidth = 2;
+                targetCtx.beginPath();
+                targetCtx.moveTo(46, -1.5);
+                targetCtx.lineTo(64, -12);
+                targetCtx.lineTo(58, -1.5);
+                targetCtx.lineTo(66, 9);
+                targetCtx.closePath();
+                targetCtx.fill();
+                targetCtx.stroke();
+            }
 
             targetCtx.restore();
 
@@ -2490,25 +2622,44 @@
             e.preventDefault();
         });
 
+        if (introAvatarCanvas) {
+            introAvatarCanvas.addEventListener('click', (e) => {
+                e.stopPropagation();
+                triggerIntroJokeReaction();
+            });
+        }
+
         if (mobileGrenadeBtn) {
             mobileGrenadeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (gameState !== 'playing') return;
                 requestLandscapeLock();
-                const aimX = player.aimX || width * 0.5;
-                const aimY = player.aimY || height * 0.68;
-                throwGrenade(aimX, aimY);
+                const tx = player.aimX || width * 0.5;
+                const ty = player.aimY || height * 0.55;
+                throwGrenade(tx, ty);
             });
         }
 
-        if (introAvatarCanvas) {
-            introAvatarCanvas.addEventListener('click', triggerIntroJokeReaction);
+        if (playerNicknameInput) {
+            playerNicknameInput.addEventListener('input', () => {
+                playerNickname = playerNicknameInput.value.trim() || 'Shérif JH';
+                try {
+                    localStorage.setItem(STORAGE_KEY_NICKNAME, playerNicknameInput.value.trim());
+                } catch (err) {}
+            });
+            playerNicknameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (startAdventureBtn) startAdventureBtn.click();
+                }
+            });
         }
 
         if (startAdventureBtn) {
             startAdventureBtn.addEventListener('click', () => {
                 ensureAudio();
                 requestLandscapeLock();
+                getCurrentNickname();
                 if (introTurning) return;
                 introTurnProgress = 0;
                 introTurning = true;
@@ -2583,6 +2734,7 @@
         // Initialisation complète au chargement
         syncBodyGameStateClass();
         resizeCanvas();
+        loadSavedNickname();
         loadScoreHistory();
         renderScoreHistoryLists();
         initBackground();
