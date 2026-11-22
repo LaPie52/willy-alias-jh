@@ -117,9 +117,30 @@
         </div>
     </div>
 
+    <!-- Bannière spéciale de cri tous les 10 000 points -->
+    <div id="shoutBanner" class="pointer-events-none fixed top-20 left-1/2 -translate-x-1/2 z-30 hidden">
+        <div class="bg-rose-600 text-amber-200 comic-box rounded-2xl px-5 py-2 text-center">
+            <div id="shoutBannerTitle" class="font-cartoon text-3xl sm:text-4xl tracking-wider leading-none">
+                AH QUE JOHNNY !!
+            </div>
+        </div>
+    </div>
+
     <!-- Bannière d'info / statut non bloquante -->
     <div id="statusToast" class="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 z-30 hidden">
         <div id="statusToastText" class="bg-zinc-900/95 text-amber-300 border-2 border-amber-300 font-bold text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg"></div>
+    </div>
+
+    <!-- Bannière spéciale Master Shooter tous les 20 000 points -->
+    <div id="masterShooterBanner" class="pointer-events-none fixed top-24 left-1/2 -translate-x-1/2 z-30 hidden">
+        <div class="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 text-zinc-950 comic-box rounded-2xl px-6 py-2.5 text-center animate-bounce">
+            <div class="font-cartoon text-3xl sm:text-5xl tracking-wider text-red-700 leading-none">
+                ★ MASTER SHOOTER ★
+            </div>
+            <div id="masterShooterSubtext" class="text-[11px] sm:text-xs font-black uppercase tracking-widest text-zinc-900 mt-0.5">
+                20 000 PTS ATTEINTS !
+            </div>
+        </div>
     </div>
 
     <!-- Écran d'introduction style affiche WANTED -->
@@ -330,6 +351,8 @@
         const comboText = document.getElementById('comboText');
         const shoutBanner = document.getElementById('shoutBanner');
         const shoutBannerTitle = document.getElementById('shoutBannerTitle');
+        const masterShooterBanner = document.getElementById('masterShooterBanner');
+        const masterShooterSubtext = document.getElementById('masterShooterSubtext');
         const statusToast = document.getElementById('statusToast');
         const statusToastText = document.getElementById('statusToastText');
         const customVoiceAudio = document.getElementById('customVoiceAudio');
@@ -355,6 +378,7 @@
         let combo = 1;
         let comboTimer = 0;
         let lastTenThousandMilestone = 0;
+        let lastTwentyThousandMilestone = 0;
         let gameState = 'intro';
         let introTurnProgress = 0;
         let introTurning = false;
@@ -368,6 +392,7 @@
         let projectiles = [];
         let grenadeProjectiles = [];
         let explosions = [];
+        let confettiParticles = [];
         let floatingTexts = [];
         let screenShake = 0;
         let spawnTimer = 0;
@@ -388,6 +413,12 @@
         let audioCtx = null;
         let rockMusicTimer = null;
         let trafficNoiseGain = null;
+
+        function updatePortraitLandscapeMode() {
+            const isTouchLike = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
+            isRotatedPortrait = isTouchLike && window.innerHeight > window.innerWidth;
+            document.body.classList.toggle('force-landscape-rotate', isRotatedPortrait);
+        }
 
         function createKeyedTargetCanvas(img) {
             try {
@@ -713,49 +744,51 @@
 
         function playAngryPersonGroanSound() {
             if (isMuted || gameState !== 'playing') return;
-            const phrases = [
-                'Eh tu fais quoi là !',
-                'Mais ça va pas la tête !',
-                'Arrête de tirer !',
-                'Hé oh, doucement !'
-            ];
-            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-            let spoke = false;
-            if (typeof window.speechSynthesis !== 'undefined') {
-                try {
-                    const utter = new SpeechSynthesisUtterance(phrase);
-                    utter.lang = 'fr-FR';
-                    utter.pitch = 0.85 + Math.random() * 0.35;
-                    utter.rate = 1.15;
-                    utter.volume = 0.85;
-                    window.speechSynthesis.speak(utter);
-                    spoke = true;
-                } catch (err) {}
-            }
-            if (!spoke) {
-                const ctxAudio = ensureAudio();
-                if (!ctxAudio) return;
-                try {
-                    const now = ctxAudio.currentTime;
-                    const osc = ctxAudio.createOscillator();
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                const now = ctxAudio.currentTime;
+                const playAnnoyingHonk = (startOffset, dur, f1, f2) => {
+                    const osc1 = ctxAudio.createOscillator();
+                    const osc2 = ctxAudio.createOscillator();
+                    const filter = ctxAudio.createBiquadFilter();
                     const gain = ctxAudio.createGain();
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(175, now);
-                    osc.frequency.linearRampToValueAtTime(135, now + 0.25);
-                    gain.gain.setValueAtTime(0.04, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-                    osc.connect(gain);
+
+                    osc1.type = 'sawtooth';
+                    osc2.type = 'square';
+                    osc1.frequency.setValueAtTime(f1, now + startOffset);
+                    osc2.frequency.setValueAtTime(f2, now + startOffset);
+                    osc1.frequency.linearRampToValueAtTime(f1 * 0.92, now + startOffset + dur);
+                    osc2.frequency.linearRampToValueAtTime(f2 * 0.92, now + startOffset + dur);
+
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime((f1 + f2) * 0.6, now + startOffset);
+                    filter.Q.value = 2.2;
+
+                    gain.gain.setValueAtTime(0.001, now + startOffset);
+                    gain.gain.linearRampToValueAtTime(0.09, now + startOffset + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + startOffset + dur);
+
+                    osc1.connect(filter);
+                    osc2.connect(filter);
+                    filter.connect(gain);
                     gain.connect(ctxAudio.destination);
-                    osc.start(now);
-                    osc.stop(now + 0.3);
-                } catch (err) {}
-            }
+
+                    osc1.start(now + startOffset);
+                    osc2.start(now + startOffset);
+                    osc1.stop(now + startOffset + dur + 0.02);
+                    osc2.stop(now + startOffset + dur + 0.02);
+                };
+
+                playAnnoyingHonk(0, 0.16, 440, 554);
+                playAnnoyingHonk(0.21, 0.24, 466, 587);
+            } catch (err) {}
         }
 
         function triggerHighwayAmbienceEvent() {
             if (isMuted || gameState !== 'playing') return;
             const roll = Math.random();
-            if (roll < 0.45) {
+            if (roll < 0.55) {
                 playCarHornSound();
             } else if (roll < 0.8) {
                 playHighwayWhooshSound();
@@ -924,14 +957,88 @@
                 lastTenThousandMilestone = currentMilestone;
                 playJohnnyShoutVoice();
             }
+            checkTwentyThousandMasterShooter();
         }
 
-        function updatePortraitLandscapeMode() {
-            const isSmallScreen = Math.min(window.innerWidth, window.innerHeight) <= 820;
-            const isPortrait = window.innerHeight > window.innerWidth;
-            isRotatedPortrait = isSmallScreen && isPortrait;
-            if (document.body) {
-                document.body.classList.toggle('force-landscape-rotate', isRotatedPortrait);
+        function playMasterShooterFanfareSound() {
+            if (isMuted) return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                const now = ctxAudio.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const start = now + idx * 0.075;
+                    const dur = idx === notes.length - 1 ? 0.45 : 0.14;
+                    const osc = ctxAudio.createOscillator();
+                    const osc2 = ctxAudio.createOscillator();
+                    const gain = ctxAudio.createGain();
+
+                    osc.type = 'triangle';
+                    osc2.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, start);
+                    osc2.frequency.setValueAtTime(freq * 0.5, start);
+
+                    gain.gain.setValueAtTime(0.001, start);
+                    gain.gain.linearRampToValueAtTime(0.09, start + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0008, start + dur);
+
+                    osc.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(ctxAudio.destination);
+
+                    osc.start(start);
+                    osc2.start(start);
+                    osc.stop(start + dur + 0.02);
+                    osc2.stop(start + dur + 0.02);
+                });
+            } catch (err) {}
+        }
+
+        function spawnConfettiBurst(milestoneValue) {
+            const colors = ['#ef4444', '#facc15', '#22c55e', '#3b82f6', '#ec4899', '#f97316', '#a855f7'];
+            const count = 95;
+            for (let i = 0; i < count; i++) {
+                confettiParticles.push({
+                    x: Math.random() * width,
+                    y: -15 - Math.random() * 140,
+                    w: 7 + Math.random() * 7,
+                    h: 5 + Math.random() * 6,
+                    vx: (Math.random() - 0.5) * 180,
+                    vy: 110 + Math.random() * 190,
+                    rot: Math.random() * Math.PI * 2,
+                    vRot: (Math.random() - 0.5) * 10,
+                    swayPhase: Math.random() * Math.PI * 2,
+                    color: colors[i % colors.length],
+                    life: 2.4 + Math.random() * 1.1
+                });
+            }
+
+            if (masterShooterBanner) {
+                if (masterShooterSubtext) {
+                    masterShooterSubtext.textContent = milestoneValue.toLocaleString('fr-FR') + ' PTS ATTEINTS !';
+                }
+                masterShooterBanner.classList.remove('hidden');
+                setTimeout(() => {
+                    if (masterShooterBanner) masterShooterBanner.classList.add('hidden');
+                }, 2600);
+            }
+
+            floatingTexts.push({
+                x: width * 0.5,
+                y: height * 0.34,
+                text: '★ MASTER SHOOTER ★',
+                color: '#fde047',
+                life: 1.6
+            });
+        }
+
+        function checkTwentyThousandMasterShooter() {
+            const currentMilestone = Math.floor(Math.max(0, score) / 20000) * 20000;
+            if (currentMilestone >= 20000 && currentMilestone > lastTwentyThousandMilestone) {
+                lastTwentyThousandMilestone = currentMilestone;
+                playMasterShooterFanfareSound();
+                spawnConfettiBurst(currentMilestone);
             }
         }
 
@@ -947,8 +1054,6 @@
             if (!isRotatedPortrait) {
                 return { x: clientX, y: clientY };
             }
-            // Quand le canvas est tourné de +90deg autour du centre :
-            // x_jeu augmente quand clientY descend ; y_jeu augmente quand clientX monte
             const gx = clientY * (width / Math.max(1, window.innerHeight));
             const gy = (window.innerWidth - clientX) * (height / Math.max(1, window.innerWidth));
             return { x: gx, y: gy };
@@ -966,7 +1071,7 @@
             canvas.width = width;
             canvas.height = height;
             player.x = width * 0.5;
-            player.y = height * 0.78;
+            player.y = height * 0.86;
             if (player.aimX === 0 && player.aimY === 0) {
                 player.aimX = width * 0.5;
                 player.aimY = height * 0.55;
@@ -1185,13 +1290,13 @@
 
             if (targetCatalog.length > 0) {
                 const tpl = targetCatalog[Math.floor(Math.random() * targetCatalog.length)];
-                let yPos = height * 0.75;
+                let yPos = height * 0.80;
                 if (tpl.lane === 'sky') {
-                    yPos = height * (0.16 + Math.random() * 0.16);
+                    yPos = height * (0.14 + Math.random() * 0.14);
                 } else if (tpl.lane === 'sidewalk') {
-                    yPos = height * (0.55 + Math.random() * 0.04);
+                    yPos = height * (0.62 + Math.random() * 0.04);
                 } else {
-                    yPos = height * (0.65 + Math.random() * 0.14);
+                    yPos = height * (0.76 + Math.random() * 0.12);
                 }
                 const baseSize = tpl.size || 95;
                 const speedFactor = isDemo ? 0.55 : 1;
@@ -1309,7 +1414,7 @@
                 floatingTexts.push({
                     x: target.x,
                     y: target.y - 20,
-                    text: '-1000 CYCLISTE !',
+                    text: '-1000',
                     color: '#ef4444',
                     life: 1.1
                 });
@@ -1323,7 +1428,7 @@
                 floatingTexts.push({
                     x: target.x,
                     y: target.y - 18,
-                    text: '-' + penalty + ' (' + target.label + ') !',
+                    text: '-' + penalty,
                     color: '#ef4444',
                     life: 1.1
                 });
@@ -1338,7 +1443,7 @@
                 floatingTexts.push({
                     x: target.x,
                     y: target.y - 18,
-                    text: '+' + pts + (combo > 1 ? ' (x' + combo + ')' : ''),
+                    text: '+' + pts,
                     color: '#facc15',
                     life: 0.95
                 });
@@ -1377,11 +1482,14 @@
             combo = 1;
             comboTimer = 0;
             lastTenThousandMilestone = 0;
+            lastTwentyThousandMilestone = 0;
             targets = [];
             projectiles = [];
             grenadeProjectiles = [];
             explosions = [];
+            confettiParticles = [];
             floatingTexts = [];
+            if (masterShooterBanner) masterShooterBanner.classList.add('hidden');
             screenShake = 0;
             spawnTimer = 0.2;
             highwayAmbienceTimer = 1.6;
@@ -1935,8 +2043,15 @@
                 }
             }
 
-            if (screenShake > 0) {
-                screenShake = Math.max(0, screenShake - dt * 45);
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const cf = confettiParticles[i];
+                cf.x += (cf.vx + Math.sin(totalTime * 6 + cf.swayPhase) * 45) * dt;
+                cf.y += cf.vy * dt;
+                cf.rot += cf.vRot * dt;
+                cf.life -= dt;
+                if (cf.life <= 0 || cf.y > height + 30) {
+                    confettiParticles.splice(i, 1);
+                }
             }
 
             ctx.save();
@@ -2011,6 +2126,16 @@
                 ctx.strokeText(ft.text, ft.x, ft.y);
                 ctx.fillStyle = ft.color;
                 ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+
+            for (const cf of confettiParticles) {
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, Math.max(0, cf.life));
+                ctx.translate(cf.x, cf.y);
+                ctx.rotate(cf.rot);
+                ctx.fillStyle = cf.color;
+                ctx.fillRect(-cf.w / 2, -cf.h / 2, cf.w, cf.h);
                 ctx.restore();
             }
 
