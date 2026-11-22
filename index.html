@@ -193,9 +193,9 @@
     </div>
 
     <script>
-        // =========================================================================
-        // CONFIGURATION ADMIN PERMANENTE (fichiers placés dans ./assets/ sur GitHub)
-        // =========================================================================
+        // =====================================================================
+        // CONFIGURATION ADMIN PERMANENTE (fichiers placés dans ./assets/)
+        // =====================================================================
         const ADMIN_ASSETS_CONFIG = {
             streetBg: './assets/images/rue.jpg',
             avatar: './assets/images/Gemini_Generated_Image_xnbtp1xnbtp1xnbt.jpg',
@@ -463,7 +463,7 @@
                 const now = ctxAudio.currentTime;
                 const osc = ctxAudio.createOscillator();
                 const osc2 = ctxAudio.createOscillator();
-                const filter = audioCtx.createBiquadFilter();
+                const filter = ctxAudio.createBiquadFilter();
                 const gain = ctxAudio.createGain();
 
                 osc.type = type;
@@ -1009,15 +1009,15 @@
             const fromLeft = Math.random() < 0.5;
             const dir = fromLeft ? 1 : -1;
 
-            if (customTargets.length > 0 && Math.random() < 0.55) {
+            if (customTargets.length > 0) {
                 const tpl = customTargets[Math.floor(Math.random() * customTargets.length)];
-                let yPos = height * 0.76;
+                let yPos = height * 0.75;
                 if (tpl.lane === 'sky') {
-                    yPos = height * (0.14 + Math.random() * 0.18);
+                    yPos = height * (0.16 + Math.random() * 0.16);
                 } else if (tpl.lane === 'sidewalk') {
-                    yPos = height * (0.53 + Math.random() * 0.04);
+                    yPos = height * (0.54 + Math.random() * 0.04);
                 } else {
-                    yPos = height * (0.63 + Math.random() * 0.17);
+                    yPos = height * (0.64 + Math.random() * 0.16);
                 }
                 const baseSize = tpl.size || 95;
                 targets.push({
@@ -1035,67 +1035,20 @@
                     isCyclist: false,
                     bobPhase: Math.random() * Math.PI * 2
                 });
-                return;
             }
 
-            const roll = Math.random();
-            if (roll < 0.16) {
+            if (cyclistCustomImg && cyclistCustomImg.complete && cyclistCustomImg.naturalWidth > 0 && Math.random() < 0.15) {
                 targets.push({
                     type: 'cyclist',
                     label: 'CYCLISTE (-1000)',
                     x: fromLeft ? -60 : width + 60,
-                    y: height * 0.55,
+                    y: height * 0.56,
                     vx: dir * (145 + Math.random() * 35),
                     vy: 0,
                     w: 68,
                     h: 78,
                     points: -1000,
                     isCyclist: true,
-                    bobPhase: Math.random() * Math.PI * 2
-                });
-            } else if (roll < 0.48) {
-                const isTruck = Math.random() < 0.35;
-                targets.push({
-                    type: isTruck ? 'truck' : 'car',
-                    label: isTruck ? 'CAMION' : 'VOITURE',
-                    x: fromLeft ? -90 : width + 90,
-                    y: height * (0.65 + Math.random() * 0.15),
-                    vx: dir * (isTruck ? 185 + Math.random() * 45 : 240 + Math.random() * 80),
-                    vy: 0,
-                    w: isTruck ? 128 : 96,
-                    h: isTruck ? 66 : 52,
-                    points: isTruck ? 250 : 150,
-                    color: isTruck ? '#f97316' : ['#ef4444', '#3b82f6', '#eab308', '#a855f7'][Math.floor(Math.random() * 4)],
-                    isCyclist: false,
-                    bobPhase: 0
-                });
-            } else if (roll < 0.76) {
-                targets.push({
-                    type: 'walker',
-                    label: 'PIÉTON',
-                    x: fromLeft ? -45 : width + 45,
-                    y: height * 0.54,
-                    vx: dir * (95 + Math.random() * 35),
-                    vy: 0,
-                    w: 44,
-                    h: 64,
-                    points: 120,
-                    shirtColor: ['#10b981', '#ec4899', '#6366f1', '#f59e0b'][Math.floor(Math.random() * 4)],
-                    isCyclist: false,
-                    bobPhase: Math.random() * Math.PI * 2
-                });
-            } else {
-                targets.push({
-                    type: 'bird',
-                    label: 'OISEAU',
-                    x: fromLeft ? -40 : width + 40,
-                    y: height * (0.14 + Math.random() * 0.16),
-                    vx: dir * (170 + Math.random() * 60),
-                    vy: 0,
-                    w: 48,
-                    h: 34,
-                    points: 180,
-                    isCyclist: false,
                     bobPhase: Math.random() * Math.PI * 2
                 });
             }
@@ -1236,15 +1189,19 @@
             grenadeProjectiles = [];
             explosions = [];
             floatingTexts = [];
-            spawnTarget();
-            spawnTarget();
+            screenShake = 0;
             spawnTimer = 0.25;
+            player.recoil = 0;
+            player.shoutTimer = 0;
+            player.shoutText = '';
             gameState = 'playing';
+
             if (introScreen) introScreen.classList.add('hidden');
             if (gameOverModal) {
                 gameOverModal.classList.add('hidden');
                 gameOverModal.classList.remove('flex');
             }
+
             updateHud();
             updateAmbientTrafficGain();
         }
@@ -1252,92 +1209,202 @@
         function endGame() {
             gameState = 'gameover';
             updateAmbientTrafficGain();
-            saveScoreEntry(score);
+
             if (score > bestScore) {
                 bestScore = score;
                 try {
                     localStorage.setItem(STORAGE_KEY_BEST, String(bestScore));
                 } catch (err) {}
             }
+
+            saveScoreEntry(score);
+            renderScoreHistoryLists();
+
             if (finalScoreEl) finalScoreEl.textContent = String(score);
             if (bestScoreDisplay) bestScoreDisplay.textContent = String(bestScore);
-            renderScoreHistoryLists();
+
             if (gameOverModal) {
                 gameOverModal.classList.remove('hidden');
                 gameOverModal.classList.add('flex');
             }
         }
 
-        function drawAvatarFigure(targetCtx, cx, cy, scale, facingBack, shoutActive, shoutLabel) {
+        function drawAvatarFigure(targetCtx, cx, cy, scale = 1, showBack = false, shoutActive = false, shoutLabel = '') {
             targetCtx.save();
             targetCtx.translate(cx, cy);
             targetCtx.scale(scale, scale);
 
-            targetCtx.fillStyle = 'rgba(0,0,0,0.28)';
-            targetCtx.beginPath();
-            targetCtx.ellipse(0, 56, 36, 10, 0, 0, Math.PI * 2);
-            targetCtx.fill();
-
-            if (avatarCustomImg && avatarCustomImg.complete && avatarCustomImg.naturalWidth > 0) {
-                const boxSize = facingBack ? 86 : 104;
-                const half = boxSize / 2;
-                const offsetY = facingBack ? 0 : -4;
+            if (avatarCustomImg && avatarCustomImg.complete && avatarCustomImg.naturalWidth > 0 && !showBack) {
+                const size = 96;
                 targetCtx.save();
                 targetCtx.beginPath();
-                targetCtx.roundRect(-half, -half + offsetY, boxSize, boxSize, 16);
+                targetCtx.roundRect(-size / 2, -size / 2 - 6, size, size, 16);
                 targetCtx.clip();
-                targetCtx.drawImage(avatarCustomImg, -half, -half + offsetY, boxSize, boxSize);
+                const iw = avatarCustomImg.naturalWidth;
+                const ih = avatarCustomImg.naturalHeight;
+                const side = Math.min(iw, ih);
+                const sx = (iw - side) / 2;
+                const sy = (ih - side) / 2;
+                targetCtx.drawImage(avatarCustomImg, sx, sy, side, side, -size / 2, -size / 2 - 6, size, size);
                 targetCtx.restore();
 
                 targetCtx.strokeStyle = '#18181b';
                 targetCtx.lineWidth = 3.5;
                 targetCtx.beginPath();
-                targetCtx.roundRect(-half, -half + offsetY, boxSize, boxSize, 16);
+                targetCtx.roundRect(-size / 2, -size / 2 - 6, size, size, 16);
                 targetCtx.stroke();
             } else {
-                targetCtx.fillStyle = facingBack ? '#27272a' : '#3f6212';
+                targetCtx.fillStyle = '#3f6212';
                 targetCtx.strokeStyle = '#18181b';
-                targetCtx.lineWidth = 3.5;
+                targetCtx.lineWidth = 3;
                 targetCtx.beginPath();
-                targetCtx.roundRect(-34, -6, 68, 56, 14);
+                targetCtx.roundRect(-26, -6, 52, 50, 12);
                 targetCtx.fill();
                 targetCtx.stroke();
-
-                if (facingBack) {
-                    targetCtx.fillStyle = '#facc15';
-                    targetCtx.font = '900 13px Inter, sans-serif';
-                    targetCtx.textAlign = 'center';
-                    targetCtx.fillText('JOHNNY', 0, 26);
-                } else {
-                    targetCtx.fillStyle = '#fef08a';
-                    targetCtx.font = '900 11px Inter, sans-serif';
-                    targetCtx.textAlign = 'center';
-                    targetCtx.fillText('Willy alias JH', 0, 24);
-                }
 
                 targetCtx.fillStyle = '#eab38a';
                 targetCtx.beginPath();
-                targetCtx.arc(0, -28, 22, 0, Math.PI * 2);
-                targetCtx.fill();
-                targetCtx.stroke();
-
-                targetCtx.fillStyle = '#451a03';
-                targetCtx.beginPath();
-                targetCtx.arc(0, -33, 22, Math.PI, Math.PI * 2);
+                targetCtx.arc(0, -26, 18, 0, Math.PI * 2);
                 targetCtx.fill();
                 targetCtx.stroke();
 
                 targetCtx.fillStyle = '#dc2626';
-                targetCtx.fillRect(-21, -38, 42, 7);
+                targetCtx.fillRect(-18, -33, 36, 6);
 
-                if (!facingBack) {
+                if (showBack) {
+                    targetCtx.fillStyle = '#fef08a';
+                    targetCtx.font = '900 12px Inter, sans-serif';
+                    targetCtx.textAlign = 'center';
+                    targetCtx.fillText('JOHNNY', 0, 22);
+                } else {
                     targetCtx.fillStyle = '#18181b';
                     targetCtx.beginPath();
-                    targetCtx.arc(-7, -26, 2.5, 0, Math.PI * 2);
-                    targetCtx.arc(7, -26, 2.5, 0, Math.PI * 2);
+                    targetCtx.arc(-6, -25, 2.3, 0, Math.PI * 2);
+                    targetCtx.arc(6, -25, 2.3, 0, Math.PI * 2);
                     targetCtx.fill();
                 }
             }
+
+            if (shoutActive && shoutLabel) {
+                targetCtx.fillStyle = '#fef08a';
+                targetCtx.strokeStyle = '#18181b';
+                targetCtx.lineWidth = 3;
+                targetCtx.beginPath();
+                targetCtx.roundRect(-72, -88, 144, 32, 12);
+                targetCtx.fill();
+                targetCtx.stroke();
+
+                targetCtx.fillStyle = '#dc2626';
+                targetCtx.font = '900 15px Inter, sans-serif';
+                targetCtx.textAlign = 'center';
+                targetCtx.fillText(shoutLabel + ' !', 0, -67);
+            }
+
+            targetCtx.restore();
+        }
+
+        function drawShooterFromBack(targetCtx, cx, cy, aimX, aimY, recoilOffset, shoutActive, shoutLabel) {
+            targetCtx.save();
+            targetCtx.translate(cx, cy + recoilOffset * 0.35);
+
+            // Ombre portée au sol
+            targetCtx.fillStyle = 'rgba(0, 0, 0, 0.36)';
+            targetCtx.beginPath();
+            targetCtx.ellipse(0, 56, 36, 10, 0, 0, Math.PI * 2);
+            targetCtx.fill();
+
+            // Jambes vues de dos
+            targetCtx.fillStyle = '#1e293b';
+            targetCtx.strokeStyle = '#18181b';
+            targetCtx.lineWidth = 3;
+            targetCtx.beginPath();
+            targetCtx.roundRect(-20, 26, 15, 28, 5);
+            targetCtx.roundRect(5, 26, 15, 28, 5);
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            // Torse vu de dos (débardeur kaki + cartouchière)
+            targetCtx.fillStyle = '#3f6212';
+            targetCtx.strokeStyle = '#18181b';
+            targetCtx.lineWidth = 3.5;
+            targetCtx.beginPath();
+            targetCtx.roundRect(-28, -14, 56, 44, 12);
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            // Bandoulière / cartouchière diagonale dans le dos
+            targetCtx.strokeStyle = '#ca8a04';
+            targetCtx.lineWidth = 7;
+            targetCtx.beginPath();
+            targetCtx.moveTo(-22, -10);
+            targetCtx.lineTo(22, 24);
+            targetCtx.stroke();
+
+            // Tête vue de dos (cheveux + bandeau rouge qui flotte)
+            targetCtx.fillStyle = '#eab38a';
+            targetCtx.strokeStyle = '#18181b';
+            targetCtx.lineWidth = 3;
+            targetCtx.beginPath();
+            targetCtx.arc(0, -32, 20, 0, Math.PI * 2);
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            // Cheveux arrière et côtés
+            targetCtx.fillStyle = '#451a03';
+            targetCtx.beginPath();
+            targetCtx.arc(0, -34, 20.5, Math.PI * 0.85, Math.PI * 2.15);
+            targetCtx.lineTo(18, -22);
+            targetCtx.lineTo(-18, -22);
+            targetCtx.closePath();
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            // Bandeau rouge autour de la tête + pan noué dans le dos
+            targetCtx.fillStyle = '#dc2626';
+            targetCtx.fillRect(-20, -40, 40, 7);
+            const tailWave = Math.sin(totalTime * 10) * 4;
+            targetCtx.beginPath();
+            targetCtx.moveTo(14, -36);
+            targetCtx.quadraticCurveTo(28, -32 + tailWave, 34, -22 + tailWave);
+            targetCtx.lineTo(26, -18 + tailWave);
+            targetCtx.quadraticCurveTo(22, -26 + tailWave, 12, -32);
+            targetCtx.closePath();
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            // Bras et fusil orientés vers la cible visée
+            const shoulderX = 14;
+            const shoulderY = -2;
+            const angle = Math.atan2((aimY || (cy - 120)) - shoulderY, (aimX || cx) - shoulderX);
+
+            targetCtx.save();
+            targetCtx.translate(shoulderX, shoulderY);
+            targetCtx.rotate(angle);
+            targetCtx.translate(-recoilOffset * 0.55, 0);
+
+            // Crosse et canon du fusil
+            targetCtx.fillStyle = '#78350f';
+            targetCtx.strokeStyle = '#18181b';
+            targetCtx.lineWidth = 2.5;
+            targetCtx.beginPath();
+            targetCtx.roundRect(-14, -4, 18, 9, 3);
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            targetCtx.fillStyle = '#27272a';
+            targetCtx.beginPath();
+            targetCtx.roundRect(4, -5, 42, 7, 2);
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            // Bras droit tenant le fusil
+            targetCtx.fillStyle = '#eab38a';
+            targetCtx.beginPath();
+            targetCtx.roundRect(-4, 0, 24, 9, 4);
+            targetCtx.fill();
+            targetCtx.stroke();
+
+            targetCtx.restore();
 
             if (shoutActive && shoutLabel) {
                 targetCtx.fillStyle = '#fef08a';
@@ -1390,7 +1457,7 @@
 
         function drawTarget(t) {
             ctx.save();
-            const bob = t.bobPhase ? Math.sin(totalTime * 8 + t.bobPhase) * 3 : 0;
+            const bob = t.bobPhase ? Math.sin(totalTime * 8 + t.bobPhase) * 2.5 : 0;
             ctx.translate(t.x, t.y + bob);
 
             if (t.type === 'custom' && t.img && t.img.complete && t.img.naturalWidth > 0) {
@@ -1411,105 +1478,31 @@
                 }
 
                 if (t.y > height * 0.45) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.34)';
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
                     ctx.beginPath();
-                    ctx.ellipse(0, drawH * 0.45, drawW * 0.44, Math.max(5, drawH * 0.12), 0, 0, Math.PI * 2);
+                    ctx.ellipse(0, drawH * 0.46, drawW * 0.45, Math.max(5, drawH * 0.13), 0, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
-                ctx.filter = 'contrast(1.03) saturate(0.96)';
+                ctx.globalAlpha = 0.96;
+                ctx.filter = 'contrast(0.98) saturate(0.92) brightness(0.97)';
                 ctx.drawImage(t.img, -drawW / 2, -drawH / 2, drawW, drawH);
                 ctx.filter = 'none';
                 ctx.restore();
                 return;
             }
 
-            const dir = t.vx >= 0 ? 1 : -1;
-            ctx.scale(dir, 1);
-
-            if (t.isCyclist) {
-                if (cyclistCustomImg && cyclistCustomImg.complete && cyclistCustomImg.naturalWidth > 0) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-                    ctx.beginPath();
-                    ctx.ellipse(0, t.h * 0.45, t.w * 0.36, 7, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.drawImage(cyclistCustomImg, -t.w / 2, -t.h / 2, t.w, t.h);
-                } else {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
-                    ctx.beginPath();
-                    ctx.ellipse(0, 32, 26, 6, 0, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    ctx.strokeStyle = '#18181b';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(-16, 22, 12, 0, Math.PI * 2);
-                    ctx.arc(16, 22, 12, 0, Math.PI * 2);
-                    ctx.stroke();
-
-                    ctx.fillStyle = '#ec4899';
-                    ctx.beginPath();
-                    ctx.arc(2, -16, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-
-                    ctx.fillRect(-8, -6, 16, 20);
-                }
-            } else if (t.type === 'car' || t.type === 'truck') {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.30)';
+            if (t.isCyclist && cyclistCustomImg && cyclistCustomImg.complete && cyclistCustomImg.naturalWidth > 0) {
+                const dir = t.vx >= 0 ? 1 : -1;
+                ctx.scale(dir, 1);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
                 ctx.beginPath();
-                ctx.ellipse(0, t.h * 0.52, t.w * 0.46, 9, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, t.h * 0.45, t.w * 0.36, 7, 0, 0, Math.PI * 2);
                 ctx.fill();
-
-                ctx.fillStyle = t.color || '#ef4444';
-                ctx.strokeStyle = '#18181b';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.roundRect(-t.w / 2, -t.h / 2, t.w, t.h, 10);
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.fillStyle = '#bae6fd';
-                ctx.fillRect(t.w * 0.08, -t.h * 0.36, t.w * 0.24, t.h * 0.32);
-
-                ctx.fillStyle = '#18181b';
-                ctx.beginPath();
-                ctx.arc(-t.w * 0.28, t.h / 2, 10, 0, Math.PI * 2);
-                ctx.arc(t.w * 0.28, t.h / 2, 10, 0, Math.PI * 2);
-                ctx.fill();
-            } else if (t.type === 'walker') {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-                ctx.beginPath();
-                ctx.ellipse(0, 20, 14, 5, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = t.shirtColor || '#10b981';
-                ctx.strokeStyle = '#18181b';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.roundRect(-11, -10, 22, 26, 6);
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.fillStyle = '#fed7aa';
-                ctx.beginPath();
-                ctx.arc(0, -20, 10, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-            } else if (t.type === 'bird') {
-                ctx.fillStyle = '#f8fafc';
-                ctx.strokeStyle = '#18181b';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                const wingY = Math.sin(totalTime * 18 + t.bobPhase) * 10;
-                ctx.beginPath();
-                ctx.moveTo(-4, -2);
-                ctx.quadraticCurveTo(2, -16 + wingY, 10, -2);
-                ctx.stroke();
+                ctx.globalAlpha = 0.96;
+                ctx.filter = 'contrast(0.98) saturate(0.92) brightness(0.97)';
+                ctx.drawImage(cyclistCustomImg, -t.w / 2, -t.h / 2, t.w, t.h);
+                ctx.filter = 'none';
             }
 
             ctx.restore();
@@ -1697,12 +1690,13 @@
                 ctx.restore();
             }
 
-            drawAvatarFigure(
+            drawShooterFromBack(
                 ctx,
                 player.x,
-                player.y + player.recoil * 0.4,
-                1.05,
-                true,
+                player.y,
+                player.aimX,
+                player.aimY,
+                player.recoil,
                 player.shoutTimer > 0,
                 player.shoutText
             );
