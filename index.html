@@ -198,6 +198,15 @@
         // =====================================================================
         const ADMIN_ASSETS_CONFIG = {
             streetBg: './assets/images/rue.jpg',
+            streetBgFallbacks: [
+                './assets/images/rue.png',
+                './assets/images/rue.jpeg',
+                './assets/images/rue.JPG',
+                './assets/images/Rue.jpg',
+                './assets/images/Sans%20titre.jpg',
+                './assets/images/Sans titre.jpg',
+                './assets/images/Gemini_Generated_Image_xnbtp1xnbtp1xnbt.jpg'
+            ],
             avatar: './assets/images/Gemini_Generated_Image_xnbtp1xnbtp1xnbt.jpg',
             avatarFallback: './assets/images/JH.jpg',
             cyclist: './assets/images/cycliste.png',
@@ -252,6 +261,7 @@
         const customVoiceAudio = document.getElementById('customVoiceAudio');
 
         let streetBgImg = null;
+        let streetBgLoadedLabel = 'défaut';
         let cyclistCustomImg = null;
         let avatarCustomImg = null;
         let customTargets = [];
@@ -390,7 +400,8 @@
                 ? ADMIN_ASSETS_CONFIG.customTargets.length
                 : 0;
             adminAssetDebugInfo.textContent =
-                'Avatar : ' + avatarLoadedStatus +
+                'Rue : ' + streetBgLoadedLabel +
+                ' • Avatar : ' + avatarLoadedStatus +
                 ' • Cibles auto : ' + autoTargetsLoadedCount + '/' + totalConfigured;
         }
 
@@ -685,14 +696,38 @@
             ctx.setLineDash([]);
         }
 
-        function initBackground() {
-            if (ADMIN_ASSETS_CONFIG.streetBg) {
-                const adminBg = new Image();
-                adminBg.onload = () => {
-                    streetBgImg = adminBg;
-                };
-                adminBg.src = ADMIN_ASSETS_CONFIG.streetBg;
+        function tryLoadStreetCandidate(candidates, idx = 0) {
+            if (!candidates || idx >= candidates.length) {
+                refreshAdminDebugStatus();
+                return;
             }
+            const src = candidates[idx];
+            if (!src) {
+                tryLoadStreetCandidate(candidates, idx + 1);
+                return;
+            }
+            const img = new Image();
+            img.onload = () => {
+                if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                    streetBgImg = img;
+                    streetBgLoadedLabel = 'OK (' + decodeURIComponent(src.split('/').pop()) + ')';
+                    refreshAdminDebugStatus();
+                } else {
+                    tryLoadStreetCandidate(candidates, idx + 1);
+                }
+            };
+            img.onerror = () => {
+                tryLoadStreetCandidate(candidates, idx + 1);
+            };
+            img.src = src;
+        }
+
+        function initBackground() {
+            const streetCandidates = [
+                ADMIN_ASSETS_CONFIG.streetBg,
+                ...(Array.isArray(ADMIN_ASSETS_CONFIG.streetBgFallbacks) ? ADMIN_ASSETS_CONFIG.streetBgFallbacks : [])
+            ];
+            tryLoadStreetCandidate(streetCandidates, 0);
 
             if (ADMIN_ASSETS_CONFIG.avatar) {
                 const adminAv = new Image();
@@ -831,12 +866,12 @@
                     const bgR = sumR / borderSamples.length;
                     const bgG = sumG / borderSamples.length;
                     const bgB = sumB / borderSamples.length;
-                    const bgIsVeryLight = bgR > 225 && bgG > 225 && bgB > 225;
+                    const bgIsVeryLight = bgR > 205 && bgG > 205 && bgB > 205;
 
                     const visited = new Uint8Array(w * h);
                     const queue = [];
-                    const tolerance = 68;
-                    const softEdge = 24;
+                    const tolerance = 96;
+                    const softEdge = 36;
 
                     const getColorDist = (idx) => {
                         const p = idx * 4;
@@ -886,7 +921,7 @@
                     if (bgIsVeryLight) {
                         for (let i = 0; i < w * h; i++) {
                             const p = i * 4;
-                            if (data[p + 3] > 0 && data[p] > 238 && data[p + 1] > 238 && data[p + 2] > 238) {
+                            if (data[p + 3] > 0 && data[p] > 224 && data[p + 1] > 224 && data[p + 2] > 224) {
                                 data[p + 3] = 0;
                             }
                         }
@@ -1307,13 +1342,11 @@
             targetCtx.save();
             targetCtx.translate(cx, cy + recoilOffset * 0.35);
 
-            // Ombre portée au sol
             targetCtx.fillStyle = 'rgba(0, 0, 0, 0.36)';
             targetCtx.beginPath();
             targetCtx.ellipse(0, 56, 36, 10, 0, 0, Math.PI * 2);
             targetCtx.fill();
 
-            // Jambes vues de dos
             targetCtx.fillStyle = '#1e293b';
             targetCtx.strokeStyle = '#18181b';
             targetCtx.lineWidth = 3;
@@ -1323,7 +1356,6 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Torse vu de dos (débardeur kaki + cartouchière)
             targetCtx.fillStyle = '#3f6212';
             targetCtx.strokeStyle = '#18181b';
             targetCtx.lineWidth = 3.5;
@@ -1332,7 +1364,6 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Bandoulière / cartouchière diagonale dans le dos
             targetCtx.strokeStyle = '#ca8a04';
             targetCtx.lineWidth = 7;
             targetCtx.beginPath();
@@ -1340,7 +1371,6 @@
             targetCtx.lineTo(22, 24);
             targetCtx.stroke();
 
-            // Tête vue de dos (cheveux + bandeau rouge qui flotte)
             targetCtx.fillStyle = '#eab38a';
             targetCtx.strokeStyle = '#18181b';
             targetCtx.lineWidth = 3;
@@ -1349,7 +1379,6 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Cheveux arrière et côtés
             targetCtx.fillStyle = '#451a03';
             targetCtx.beginPath();
             targetCtx.arc(0, -34, 20.5, Math.PI * 0.85, Math.PI * 2.15);
@@ -1359,7 +1388,6 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Bandeau rouge autour de la tête + pan noué dans le dos
             targetCtx.fillStyle = '#dc2626';
             targetCtx.fillRect(-20, -40, 40, 7);
             const tailWave = Math.sin(totalTime * 10) * 4;
@@ -1372,7 +1400,6 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Bras et fusil orientés vers la cible visée
             const shoulderX = 14;
             const shoulderY = -2;
             const angle = Math.atan2((aimY || (cy - 120)) - shoulderY, (aimX || cx) - shoulderX);
@@ -1382,7 +1409,6 @@
             targetCtx.rotate(angle);
             targetCtx.translate(-recoilOffset * 0.55, 0);
 
-            // Crosse et canon du fusil
             targetCtx.fillStyle = '#78350f';
             targetCtx.strokeStyle = '#18181b';
             targetCtx.lineWidth = 2.5;
@@ -1397,7 +1423,6 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Bras droit tenant le fusil
             targetCtx.fillStyle = '#eab38a';
             targetCtx.beginPath();
             targetCtx.roundRect(-4, 0, 24, 9, 4);
@@ -1455,6 +1480,51 @@
             introAvatarCtx.restore();
         }
 
+        function drawBlendedImage(targetCtx, img, drawW, drawH) {
+            const off = document.createElement('canvas');
+            const w = Math.max(16, Math.round(drawW));
+            const h = Math.max(16, Math.round(drawH));
+            off.width = w;
+            off.height = h;
+            const octx = off.getContext('2d');
+
+            octx.filter = 'contrast(0.92) saturate(0.84) brightness(0.92)';
+            octx.drawImage(img, 0, 0, w, h);
+            octx.filter = 'none';
+
+            // Fondu progressif sur les 4 bords pour gommer les contours rectangulaires blancs/gris
+            octx.globalCompositeOperation = 'destination-in';
+            const fadeX = Math.max(8, w * 0.16);
+            const fadeY = Math.max(6, h * 0.18);
+
+            const leftGrad = octx.createLinearGradient(0, 0, fadeX, 0);
+            leftGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            leftGrad.addColorStop(1, 'rgba(0,0,0,1)');
+            octx.fillStyle = leftGrad;
+            octx.fillRect(0, 0, fadeX, h);
+
+            const rightGrad = octx.createLinearGradient(w - fadeX, 0, w, 0);
+            rightGrad.addColorStop(0, 'rgba(0,0,0,1)');
+            rightGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            octx.fillStyle = rightGrad;
+            octx.fillRect(w - fadeX, 0, fadeX, h);
+
+            const topGrad = octx.createLinearGradient(0, 0, 0, fadeY);
+            topGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            topGrad.addColorStop(1, 'rgba(0,0,0,1)');
+            octx.fillStyle = topGrad;
+            octx.fillRect(0, 0, w, fadeY);
+
+            const bottomGrad = octx.createLinearGradient(0, h - fadeY, 0, h);
+            bottomGrad.addColorStop(0, 'rgba(0,0,0,1)');
+            bottomGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            octx.fillStyle = bottomGrad;
+            octx.fillRect(0, h - fadeY, w, fadeY);
+
+            targetCtx.globalAlpha = 0.92;
+            targetCtx.drawImage(off, -drawW / 2, -drawH / 2, drawW, drawH);
+        }
+
         function drawTarget(t) {
             ctx.save();
             const bob = t.bobPhase ? Math.sin(totalTime * 8 + t.bobPhase) * 2.5 : 0;
@@ -1478,16 +1548,14 @@
                 }
 
                 if (t.y > height * 0.45) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.44)';
                     ctx.beginPath();
-                    ctx.ellipse(0, drawH * 0.46, drawW * 0.45, Math.max(5, drawH * 0.13), 0, 0, Math.PI * 2);
+                    ctx.ellipse(0, drawH * 0.45, drawW * 0.44, Math.max(6, drawH * 0.14), 0, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
-                ctx.globalAlpha = 0.96;
-                ctx.filter = 'contrast(0.98) saturate(0.92) brightness(0.97)';
-                ctx.drawImage(t.img, -drawW / 2, -drawH / 2, drawW, drawH);
-                ctx.filter = 'none';
+                drawBlendedImage(ctx, t.img, drawW, drawH);
+
                 ctx.restore();
                 return;
             }
@@ -1495,14 +1563,11 @@
             if (t.isCyclist && cyclistCustomImg && cyclistCustomImg.complete && cyclistCustomImg.naturalWidth > 0) {
                 const dir = t.vx >= 0 ? 1 : -1;
                 ctx.scale(dir, 1);
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.36)';
                 ctx.beginPath();
                 ctx.ellipse(0, t.h * 0.45, t.w * 0.36, 7, 0, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.globalAlpha = 0.96;
-                ctx.filter = 'contrast(0.98) saturate(0.92) brightness(0.97)';
-                ctx.drawImage(cyclistCustomImg, -t.w / 2, -t.h / 2, t.w, t.h);
-                ctx.filter = 'none';
+                drawBlendedImage(ctx, cyclistCustomImg, t.w, t.h);
             }
 
             ctx.restore();
