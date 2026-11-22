@@ -40,43 +40,113 @@
             transform: translate(2px, 2px);
             box-shadow: 1px 1px 0px #18181b;
         }
-        /* Style affiche WANTED parchemin */
+        /* Style affiche WANTED plaque western vieillie (parchemin & rouille) */
         .wanted-poster {
             background:
-                radial-gradient(circle at 12% 14%, rgba(180, 125, 58, 0.22), transparent 36%),
-                radial-gradient(circle at 88% 84%, rgba(146, 92, 34, 0.24), transparent 40%),
-                linear-gradient(165deg, #f7e7be 0%, #ebd194 55%, #dec07c 100%);
-            border: 4px solid #29180a;
+                radial-gradient(circle at 12% 14%, rgba(120, 53, 15, 0.34), transparent 36%),
+                radial-gradient(circle at 88% 18%, rgba(146, 64, 14, 0.30), transparent 38%),
+                radial-gradient(circle at 16% 88%, rgba(92, 34, 8, 0.42), transparent 42%),
+                radial-gradient(circle at 86% 86%, rgba(120, 53, 15, 0.36), transparent 40%),
+                radial-gradient(circle at 50% 45%, rgba(254, 243, 199, 0.45), rgba(217, 167, 96, 0.72) 72%, rgba(146, 92, 36, 0.88) 100%),
+                linear-gradient(165deg, #f3d299 0%, #dfb068 48%, #c58b42 100%);
+            color: #1f1209;
+            border: 4px solid #29160a;
             box-shadow:
-                inset 0 0 0 3px #855824,
-                inset 0 0 28px rgba(120, 72, 22, 0.25),
-                8px 8px 0px #18181b;
+                inset 0 0 0 2px rgba(41, 22, 10, 0.55),
+                inset 0 0 36px rgba(92, 45, 12, 0.38),
+                8px 10px 0px rgba(15, 10, 6, 0.85);
+        }
+        .wanted-rivet {
+            width: 10px;
+            height: 10px;
+            border-radius: 9999px;
+            background: radial-gradient(circle at 30% 30%, #f5e6c8, #5c3a1e 75%, #241306 100%);
+            border: 1.5px solid #1f1209;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+        }
+        .wanted-divider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .wanted-divider::before,
+        .wanted-divider::after {
+            content: "";
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #29160a 35%, #29160a 65%, transparent);
+        }
+        .fun-stamp {
+            transform: rotate(-5deg);
+            border: 2px dashed #29160a;
+            background: rgba(254, 243, 199, 0.75);
+            color: #29160a;
         }
         canvas {
             display: block;
             width: 100%;
             height: 100%;
             cursor: crosshair;
-            touch-action: none;
         }
-        /* Bouton tactile de grenade sur téléphone */
-        #mobileGrenadeBtn {
-            display: none;
-        }
-        @media (pointer: coarse), (max-width: 768px) {
-            body.is-playing #mobileGrenadeBtn {
-                display: flex;
+        /* Pivotement paysage uniquement lorsque le téléphone est orienté à la verticale (portrait) */
+        @media (orientation: portrait) {
+            body.force-landscape-rotate #gameCanvas {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                width: 100vh;
+                height: 100vw;
+                transform: translate(-50%, -50%) rotate(90deg) scale(0.92);
+                transform-origin: center center;
+            }
+            body.force-landscape-rotate #hudBar {
+                position: fixed;
+                top: auto;
+                bottom: 8px;
+                left: 8px;
+                right: auto;
+                width: auto;
+                max-width: calc(100vw - 125px);
+                padding: 6px 8px;
+                gap: 6px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                background: rgba(24, 24, 27, 0.65);
+                backdrop-filter: blur(4px);
+                border-radius: 14px;
+            }
+            body.force-landscape-rotate #hudBar .comic-box {
+                padding: 3px 8px;
+                border-width: 2px;
+                box-shadow: 2px 2px 0px #18181b;
+                border-radius: 10px;
+            }
+            body.force-landscape-rotate #hudBar .font-cartoon {
+                font-size: 1.1rem;
+                line-height: 1.05;
+            }
+            body.force-landscape-rotate #hudBar .comic-btn {
+                padding: 4px 8px;
+                font-size: 0.7rem;
+                border-width: 2px;
+                box-shadow: 2px 2px 0px #18181b;
+            }
+            body.force-landscape-rotate #mobileGrenadeBtn {
+                bottom: 12px;
+                right: 12px;
+                padding: 8px 14px;
+                font-size: 1.15rem;
             }
         }
-        /* Pivotement paysage sur téléphone tenu en portrait */
-        body.force-landscape-rotate #gameCanvas {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            width: 100vh;
-            height: 100vw;
-            transform: translate(-50%, -50%) rotate(90deg) scale(0.92);
-            transform-origin: center center;
+        /* Quand le téléphone est orienté à l'horizontal (paysage), aucune rotation */
+        @media (orientation: landscape) {
+            body.force-landscape-rotate #gameCanvas {
+                position: static;
+                width: 100%;
+                height: 100%;
+                transform: none;
+            }
         }
         /* Mise en page compacte et ergonomique en paysage sur téléphone */
         @media (orientation: landscape) and (max-height: 540px) {
@@ -122,14 +192,8 @@
                 max-height: 94vh;
                 overflow-y: auto;
             }
-            #introScreen .wanted-poster .space-y-3 > :not([hidden]) ~ :not([hidden]) {
-                margin-top: 6px;
-            }
             #introScreen .font-cartoon.text-5xl {
                 font-size: 2.25rem;
-            }
-            #introScreen h1.font-cartoon {
-                font-size: 1.35rem;
             }
             #introAvatarCanvas {
                 width: 84px !important;
@@ -145,125 +209,64 @@
                 top: 3.1rem;
             }
         }
-        /* Repositionnement du HUD en paysage forcé (téléphone tenu en portrait pivoté) */
-        body.force-landscape-rotate #hudBar {
-            position: fixed;
-            top: auto;
-            bottom: 8px;
-            left: 8px;
-            right: auto;
-            width: auto;
-            max-width: calc(100vw - 125px);
-            padding: 6px 8px;
-            gap: 6px;
-            flex-direction: row;
-            flex-wrap: wrap;
-            align-items: center;
-            background: rgba(24, 24, 27, 0.72);
-            backdrop-filter: blur(4px);
-            border: 2px solid rgba(250, 204, 21, 0.45);
-            border-radius: 14px;
+        /* Bouton tactile de grenade visible uniquement pendant une partie active */
+        #mobileGrenadeBtn {
+            display: none;
         }
-        body.force-landscape-rotate #hudBar .comic-box {
-            padding: 3px 8px;
-            border-width: 2px;
-            box-shadow: 2px 2px 0px #18181b;
-            border-radius: 10px;
-        }
-        body.force-landscape-rotate #hudBar .font-cartoon {
-            font-size: 1.15rem;
-            line-height: 1.05;
-        }
-        body.force-landscape-rotate #hudBar .comic-btn {
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            border-width: 2px;
-            box-shadow: 2px 2px 0px #18181b;
-        }
-        body.force-landscape-rotate #mobileGrenadeBtn {
-            bottom: 12px;
-            right: 12px;
-            padding: 10px 14px;
-            font-size: 1.2rem;
-        }
-        body.force-landscape-rotate #introScreen .wanted-poster {
-            max-width: 24rem;
-            padding: 10px 12px;
-            max-height: 92vh;
-            overflow-y: auto;
-        }
-        body.force-landscape-rotate #introAvatarCanvas {
-            width: 84px !important;
-            height: 76px !important;
-        }
-        body.force-landscape-rotate #startAdventureBtn {
-            font-size: 1.4rem;
-            padding-top: 6px;
-            padding-bottom: 6px;
-        }
-        @keyframes floatSlow {
-            0%, 100% { transform: translateY(0px) rotate(-1deg); }
-            50% { transform: translateY(-6px) rotate(1deg); }
-        }
-        .animate-float-slow {
-            animation: floatSlow 2.8s ease-in-out infinite;
+        body.is-playing #mobileGrenadeBtn {
+            display: inline-flex;
         }
     </style>
 </head>
-<body id="gameRoot" class="relative w-screen h-screen overflow-hidden bg-zinc-900">
+<body>
+    <!-- Audio personnalisé optionnel pour les cris / répliques -->
+    <audio id="customVoiceAudio" preload="auto"></audio>
 
     <!-- Canvas principal du jeu -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Lecteur audio caché pour la voix personnalisée -->
-    <audio id="customVoiceAudio" preload="auto" playsinline class="hidden"></audio>
-
-    <!-- Barre HUD supérieure épurée -->
-    <div id="hudBar" class="pointer-events-none fixed top-0 left-0 right-0 z-20 p-3 sm:p-4 flex flex-wrap items-start justify-between gap-2">
-        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div class="bg-amber-300 comic-box rounded-xl px-3 sm:px-4 py-1.5">
-                <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Score</div>
-                <div id="scoreDisplay" class="font-cartoon text-2xl sm:text-3xl text-zinc-900 leading-tight">0</div>
+    <!-- Barre HUD supérieure pendant la partie -->
+    <div id="hudBar" class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+        <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
+            <div class="bg-amber-100 comic-box rounded-2xl px-3.5 py-1.5 text-zinc-900">
+                <div class="text-[10px] font-black uppercase tracking-wider text-zinc-600">Score</div>
+                <div id="scoreDisplay" class="font-cartoon text-2xl sm:text-3xl leading-none">0</div>
             </div>
-
-            <div class="bg-orange-200 comic-box rounded-xl px-3 sm:px-4 py-1.5">
-                <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Grenades</div>
-                <div id="grenadeDisplay" class="font-cartoon text-xl sm:text-2xl text-zinc-900 leading-tight">💣💣💣💣</div>
+            <div class="bg-emerald-100 comic-box rounded-2xl px-3.5 py-1.5 text-zinc-900">
+                <div class="text-[10px] font-black uppercase tracking-wider text-zinc-600">Grenades</div>
+                <div id="grenadeDisplay" class="font-cartoon text-xl sm:text-2xl leading-none">💣💣💣💣</div>
             </div>
-
-            <div class="bg-sky-200 comic-box rounded-xl px-3 sm:px-4 py-1.5">
-                <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Temps</div>
-                <div id="timeDisplay" class="font-cartoon text-2xl sm:text-3xl text-zinc-900 leading-tight">60s</div>
+            <div class="bg-sky-100 comic-box rounded-2xl px-3.5 py-1.5 text-zinc-900">
+                <div class="text-[10px] font-black uppercase tracking-wider text-zinc-600">Temps</div>
+                <div id="timeDisplay" class="font-cartoon text-2xl sm:text-3xl leading-none">60s</div>
             </div>
-
-            <div id="comboBadge" class="hidden bg-rose-500 text-white comic-box rounded-xl px-3 py-1.5">
-                <span id="comboText" class="font-cartoon text-xl sm:text-2xl">x2 COMBO !</span>
+            <div id="comboBadge" class="hidden bg-rose-500 text-white comic-box rounded-2xl px-3 py-1.5 font-cartoon text-xl sm:text-2xl leading-none">
+                <span id="comboText">x2 COMBO !</span>
             </div>
         </div>
 
-        <div class="pointer-events-auto flex flex-wrap items-center gap-2">
-            <button id="openScoresBtn" type="button" class="comic-btn bg-yellow-200 hover:bg-yellow-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer" title="Voir le Top 10 des scores">
+        <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
+            <button id="openScoresBtn" type="button" class="comic-btn bg-amber-300 hover:bg-amber-400 text-zinc-950 font-black text-xs px-3 py-2 rounded-xl cursor-pointer">
                 🏆 Top 10
             </button>
-            <button id="muteBtn" type="button" class="comic-btn bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-bold text-sm px-3 py-2 rounded-xl cursor-pointer" title="Couper / activer le son">
+            <button id="muteBtn" type="button" class="comic-btn bg-zinc-100 hover:bg-zinc-200 text-zinc-950 font-black text-xs px-3 py-2 rounded-xl cursor-pointer" title="Couper / Activer le son">
                 🔊
             </button>
-            <button id="restartBtn" type="button" class="comic-btn bg-amber-400 hover:bg-amber-500 text-zinc-900 font-black text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
+            <button id="restartBtn" type="button" class="comic-btn bg-orange-400 hover:bg-orange-500 text-zinc-950 font-black text-xs px-3 py-2 rounded-xl cursor-pointer">
                 ↻ Rejouer
             </button>
         </div>
     </div>
 
-    <!-- Bouton tactile dédié pour lancer une grenade sur téléphone -->
-    <button id="mobileGrenadeBtn" type="button" class="fixed bottom-4 right-4 z-30 comic-btn bg-orange-500 active:bg-orange-600 text-white font-cartoon text-2xl px-4 py-2.5 rounded-2xl items-center gap-1.5 cursor-pointer" aria-label="Lancer une grenade">
-        <span>💣</span>
-        <span>GRENADE</span>
+    <!-- Bouton tactile dédié aux grenades -->
+    <button id="mobileGrenadeBtn" type="button" class="fixed bottom-4 right-4 z-20 comic-btn bg-emerald-400 hover:bg-emerald-500 text-zinc-950 font-cartoon text-xl sm:text-2xl px-4 py-2.5 rounded-2xl cursor-pointer items-center gap-1.5" title="Lancer une grenade">
+        💣 GRENADE
     </button>
 
-    <!-- Bannière spéciale de cri tous les 10 000 points -->
+    <!-- Bannière de cri spécial -->
     <div id="shoutBanner" class="pointer-events-none fixed top-20 left-1/2 -translate-x-1/2 z-30 hidden">
-        <div class="bg-rose-600 text-amber-200 comic-box rounded-2xl px-5 py-2 text-center">
-            <div id="shoutBannerTitle" class="font-cartoon text-3xl sm:text-4xl tracking-wider leading-none">
+        <div class="bg-amber-300 text-zinc-950 comic-box rounded-2xl px-5 py-2 text-center">
+            <div id="shoutBannerTitle" class="font-cartoon text-2xl sm:text-4xl tracking-wider text-red-700 leading-none">
                 AH QUE JOHNNY !!
             </div>
         </div>
@@ -286,88 +289,119 @@
         <div id="statusToastText" class="bg-zinc-900/95 text-amber-300 border-2 border-amber-300 font-bold text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg"></div>
     </div>
 
-    <!-- Écran d'introduction style affiche WANTED -->
-    <div id="introScreen" class="fixed inset-0 z-40 flex items-center justify-center bg-zinc-950/60 backdrop-blur-[2px] p-3 sm:p-5">
-        <div class="wanted-poster max-w-xl w-full rounded-2xl p-4 sm:p-6 text-stone-950 text-center space-y-3 relative overflow-hidden">
-            <!-- Punaises décoratives aux coins supérieurs -->
-            <div class="pointer-events-none flex items-center justify-between px-1 -mt-1">
-                <span class="w-3.5 h-3.5 rounded-full bg-red-700 border-2 border-stone-950 shadow"></span>
-                <span class="text-[10px] sm:text-xs font-black tracking-[0.25em] uppercase text-amber-950/80">
+    <!-- Écran d'introduction style affiche WANTED plaque western vieillie -->
+    <div id="introScreen" class="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-3 sm:p-5">
+        <div class="wanted-poster max-w-xl w-full rounded-2xl p-4 sm:p-6 text-[#1f1209] text-center space-y-2.5 relative overflow-hidden">
+            <!-- 4 rivets de plaque métallique aux coins -->
+            <div class="flex items-center justify-between">
+                <span class="wanted-rivet"></span>
+                <span class="text-[10px] sm:text-xs font-black tracking-[0.26em] uppercase text-[#3b1f0e]">
                     ★ AVIS DE RECHERCHE — BOULEURS ★
                 </span>
-                <span class="w-3.5 h-3.5 rounded-full bg-red-700 border-2 border-stone-950 shadow"></span>
+                <span class="wanted-rivet"></span>
             </div>
 
-            <!-- En-tête WANTED et record -->
-            <div class="border-y-2 border-stone-900/80 py-1.5 flex items-center justify-between gap-2 px-1">
-                <span class="text-[11px] font-black uppercase tracking-wider text-amber-950">
-                    🎸 SHÉRIF ROCK'N'ROLL
-                </span>
-                <div class="bg-amber-950 text-amber-200 rounded-md px-2.5 py-0.5 text-xs font-black">
-                    💰 PRIME RECORD : <span id="introBestScore">0</span> PTS
-                </div>
-            </div>
-
+            <!-- Titre WANTED imposant + sous-titre style plaque -->
             <div class="space-y-0.5 pt-0.5">
-                <div class="font-cartoon text-5xl sm:text-6xl text-red-700 leading-none tracking-wider drop-shadow-[2px_2px_0px_rgba(41,24,10,0.35)]">
+                <div class="font-cartoon text-5xl sm:text-7xl text-[#1a0e06] leading-none tracking-[0.08em]">
                     WANTED
                 </div>
-                <h1 class="font-cartoon text-2xl sm:text-3xl text-stone-950 leading-tight">
-                    WILLY ALIAS JH : LE SHÉRIF DU QUARTIER
-                </h1>
+                <div class="wanted-divider px-4 py-0.5">
+                    <span class="font-cartoon text-xl sm:text-2xl tracking-wider text-[#29160a]">
+                        WILLY ALIAS JH • LE SHÉRIF DU QUARTIER
+                    </span>
+                </div>
             </div>
 
-            <!-- Champ de saisie obligatoire/pratique du surnom dès l'arrivée -->
-            <div class="bg-amber-100/95 border-2 border-stone-900 rounded-xl p-2.5 flex flex-col sm:flex-row items-center gap-2 text-left">
-                <label for="playerNicknameInput" class="text-xs font-black uppercase text-stone-950 shrink-0">
-                    🤠 Ton surnom :
-                </label>
-                <input
-                    id="playerNicknameInput"
-                    type="text"
-                    maxlength="18"
-                    placeholder="Entre ton surnom (ex. Johnny77)"
-                    class="w-full bg-white text-zinc-950 font-bold text-xs sm:text-sm px-3 py-1.5 rounded-lg border-2 border-stone-900 focus:outline-none focus:ring-2 focus:ring-red-700"
-                />
-            </div>
-
-            <!-- Portrait encadré de shérif + bulle interactive -->
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 py-1">
-                <div class="relative bg-amber-950/15 border-2 border-stone-900 rounded-xl p-1.5 shadow-inner">
-                    <canvas id="introAvatarCanvas" width="112" height="100" class="rounded-lg block cursor-pointer" title="Clique sur l'avatar !"></canvas>
-                    <div class="mt-1 bg-stone-900 text-amber-200 font-cartoon text-xs tracking-widest rounded py-0.5">
+            <!-- Portrait encadré + surnom + réplique -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 py-0.5">
+                <div class="relative bg-[#e6c28a]/85 border-2 border-[#29160a] rounded-xl p-1.5 shadow-inner shrink-0">
+                    <canvas id="introAvatarCanvas" width="108" height="96" class="rounded-lg block cursor-pointer sepia-[0.45] contrast-115" title="Clique sur l'avatar !"></canvas>
+                    <div class="mt-1 bg-[#29160a] text-[#fef3c7] font-cartoon text-xs tracking-widest rounded py-0.5">
                         ALIAS : JH
                     </div>
                 </div>
 
-                <div class="flex-1 text-left space-y-2 max-w-xs">
-                    <div id="introJokeBubble" class="bg-amber-50/95 border-2 border-stone-900 rounded-xl px-3 py-2 text-xs sm:text-sm font-extrabold text-stone-900 shadow-sm">
+                <div class="flex-1 w-full max-w-sm text-left space-y-2">
+                    <div id="introJokeBubble" class="bg-[#fef3c7]/80 border-2 border-[#29160a] rounded-xl px-3 py-1.5 text-xs sm:text-sm font-extrabold text-[#1f1209]">
                         Ah Que Johnny à Bouleurs ! 🎸
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button id="introMusicBtn" type="button" class="comic-btn bg-amber-200 hover:bg-amber-300 text-stone-950 font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
-                            🎸 Musique Rock : ON
+
+                    <div class="flex items-center gap-1.5">
+                        <input
+                            id="playerNicknameInput"
+                            type="text"
+                            maxlength="18"
+                            placeholder="Ton surnom (ex. Johnny77)"
+                            class="w-full bg-[#fef3c7]/90 text-[#1f1209] placeholder-[#6b4423] font-bold text-xs sm:text-sm px-2.5 py-1.5 rounded-lg border-2 border-[#29160a] focus:outline-none"
+                        />
+                        <button id="randomNickBtn" type="button" class="comic-btn bg-[#e7bc78] hover:bg-[#dca95c] text-[#1f1209] font-extrabold text-[11px] px-2.5 py-1.5 rounded-lg cursor-pointer shrink-0" title="Tirer un surnom au sort">
+                            🎲
                         </button>
-                        <button id="introScoresBtn" type="button" class="comic-btn bg-yellow-200 hover:bg-yellow-300 text-stone-950 font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
-                            🏆 Top 10
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button id="introJokeBtn" type="button" class="comic-btn bg-[#f5deb3] hover:bg-[#ebd09d] text-[#1f1209] font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
+                            Vanne
+                        </button>
+                        <button id="introHonkBtn" type="button" class="comic-btn bg-[#f5deb3] hover:bg-[#ebd09d] text-[#1f1209] font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
+                            Klaxon
+                        </button>
+                        <button id="introCowboyBtn" type="button" class="comic-btn bg-[#f5deb3] hover:bg-[#ebd09d] text-[#1f1209] font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
+                            Cowboy : ON
+                        </button>
+                        <button id="introMusicBtn" type="button" class="comic-btn bg-[#f5deb3] hover:bg-[#ebd09d] text-[#1f1209] font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
+                            Musique Rock : ON
+                        </button>
+                        <button id="introScoresBtn" type="button" class="comic-btn bg-[#f5deb3] hover:bg-[#ebd09d] text-[#1f1209] font-extrabold text-[11px] px-2.5 py-1 rounded-lg cursor-pointer">
+                            Top 10
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Règles essentielles concises -->
-            <div class="bg-amber-950/10 border-2 border-stone-900/75 rounded-xl px-3 py-2 text-[11px] sm:text-xs font-bold text-stone-900 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-                <span>🎯 Clic / Toucher : Tirer</span>
-                <span>💣 Clic droit / Bouton : Grenade (4)</span>
-                <span>🚨 Police / Gendarmerie / Pompiers : -1000</span>
-                <span>⚡ MimiCar : +3000 (toutes les 20s)</span>
+            <!-- Règles du jeu -->
+            <div class="bg-[#fef3c7]/65 border-2 border-[#29160a] rounded-xl px-3 py-2 text-left text-[11px] sm:text-xs font-bold text-[#1f1209] space-y-1">
+                <div class="font-black uppercase text-[10px] tracking-wider text-[#4a2810]">
+                    Règles de la ronde (60 secondes)
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5">
+                    <div><strong>Tir :</strong> Clic ou toucher pour marquer des points (combos).</div>
+                    <div><strong>Grenades (4) :</strong> Clic droit ou bouton GRENADE.</div>
+                    <div><strong>Gyrophares &amp; cycliste :</strong> -1000 pts.</div>
+                    <div><strong>MimiCar :</strong> +3000 pts (toutes les 20s) • 20 000 pts : Master Shooter.</div>
+                </div>
             </div>
 
-            <div id="adminAssetDebugInfo" class="text-[10px] font-semibold text-amber-950/75"></div>
+            <!-- Prime / Record style affiche WANTED -->
+            <div class="pt-0.5 space-y-1">
+                <div class="flex items-center justify-center gap-3 flex-wrap">
+                    <span id="welcomeFriendlyBadge" class="text-[11px] font-black uppercase tracking-wider text-[#3b1f0e]">
+                        SHÉRIF ROCK’N’ROLL
+                    </span>
+                    <span class="fun-stamp text-[10px] font-black uppercase px-2 py-0.5 rounded">
+                        BOULEURS EDITION
+                    </span>
+                </div>
+                <div class="font-cartoon text-3xl sm:text-5xl text-[#1a0e06] tracking-wide leading-none">
+                    RECORD : <span id="introBestScore">0</span> PTS
+                </div>
+            </div>
 
-            <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-red-700 hover:bg-red-800 text-amber-100 font-cartoon text-2xl sm:text-3xl py-2.5 rounded-xl cursor-pointer tracking-wider">
-                ▶ WELCOME À BOULEURS CITY
+            <div id="adminAssetDebugInfo" class="hidden"></div>
+
+            <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-[#29160a] hover:bg-[#3d2110] text-[#fef3c7] font-cartoon text-2xl sm:text-3xl py-2.5 rounded-xl cursor-pointer tracking-wider">
+                Cliquez ici
             </button>
+
+            <!-- Rivets du bas -->
+            <div class="flex items-center justify-between pt-0.5">
+                <span class="wanted-rivet"></span>
+                <span class="text-[10px] font-black uppercase tracking-[0.22em] text-[#4a2810]">
+                    ★ REWARD ★
+                </span>
+                <span class="wanted-rivet"></span>
+            </div>
         </div>
     </div>
 
@@ -393,7 +427,7 @@
             </div>
 
             <div>
-                <div class="text-xs font-black uppercase text-zinc-700 mb-1.5">Classement Top 10 (Surnom & Score)</div>
+                <div class="text-xs font-black uppercase text-zinc-700 mb-1.5">Classement Top 10 (Surnom &amp; Score)</div>
                 <div id="scoresModalList" class="space-y-1.5 max-h-64 overflow-y-auto"></div>
             </div>
 
@@ -468,7 +502,7 @@
                 { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'left', points: 220, speed: 275, size: 164, color: '#64748b' },
                 { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 248, color: '#f8fafc' },
                 { name: 'MimiCar', src: './assets/images/mimiCar.jpg', lane: 'road', facing: 'right', points: 3000, speed: 520, size: 160, color: '#86efac', cooldownSeconds: 20 },
-                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'road', facing: 'right', points: 150, speed: 155, size: 132, color: '#334155' },
+                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'road', facing: 'right', points: 150, speed: 155, size: 198, color: '#334155' },
                 { name: 'Chat', src: './assets/images/chat.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 190, size: 68, color: '#d97706' },
                 { name: 'Chien', src: './assets/images/chien.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 205, size: 74, color: '#eab308' },
                 { name: 'Rat', src: './assets/images/rat.jpg', lane: 'sidewalk', facing: 'right', points: 220, speed: 235, size: 50, color: '#9ca3af' },
@@ -482,10 +516,22 @@
 
         const INTRO_JOKES = [
             'Ah Que Johnny à Bouleurs ! 🎸',
-            'Attention aux gyrophares, ça coûte -1000 ! 🚨',
-            'La cycliste passe : laisse-la tranquille ! 🚴‍♀️',
-            '4 grenades dans la besace, clic droit ! 💣',
-            'Qui veut faire un tour sur la route ? 😎'
+            'Attention aux gyrophares, ça pique à -1000 ! 🚨',
+            'La cycliste passe : on lui fait coucou, pas de tir ! 🚴‍♀️',
+            '4 grenades dans la besace : clic droit ou bouton ! 💣',
+            'Qui veut mettre le feu à la route aujourd’hui ? 😎',
+            'MimiCar déboule en bolide toutes les 20s : ouvre l’œil ! ⚡',
+            'Même les poubelles roulent en mode VIP à Bouleurs ! 🗑️💨'
+        ];
+
+        const FUN_NICKNAMES = [
+            'Johnny77',
+            'Shérif Banane',
+            'GuitarHero77',
+            'Cowboy Paillettes',
+            'Roi du Klaxon',
+            'As de la Gâchette',
+            'Bouleurs Kid'
         ];
 
         // Références DOM principales
@@ -495,11 +541,16 @@
         const introAvatarCanvas = document.getElementById('introAvatarCanvas');
         const introAvatarCtx = introAvatarCanvas.getContext('2d');
         const introJokeBubble = document.getElementById('introJokeBubble');
+        const introJokeBtn = document.getElementById('introJokeBtn');
+        const introHonkBtn = document.getElementById('introHonkBtn');
+        const randomNickBtn = document.getElementById('randomNickBtn');
+        const welcomeFriendlyBadge = document.getElementById('welcomeFriendlyBadge');
         const introScoresBtn = document.getElementById('introScoresBtn');
         const introBestScoreEl = document.getElementById('introBestScore');
         const playerNicknameInput = document.getElementById('playerNicknameInput');
         const adminAssetDebugInfo = document.getElementById('adminAssetDebugInfo');
         const startAdventureBtn = document.getElementById('startAdventureBtn');
+        const introCowboyBtn = document.getElementById('introCowboyBtn');
         const introMusicBtn = document.getElementById('introMusicBtn');
         const mobileGrenadeBtn = document.getElementById('mobileGrenadeBtn');
         const gameOverModal = document.getElementById('gameOverModal');
@@ -551,6 +602,7 @@
         let introJokeIndex = 0;
         let introDemoSpawnTimer = 0.4;
         let isMuted = false;
+        let cowboyAmbienceEnabled = true;
         let rockMusicEnabled = true;
 
         let targets = [];
@@ -577,6 +629,7 @@
         };
 
         let audioCtx = null;
+        let cowboyMusicTimer = null;
         let rockMusicTimer = null;
         let trafficNoiseGain = null;
 
@@ -587,8 +640,15 @@
         /**
          * Détecte si l'appareil est un téléphone/tablette tactile en portrait
          * afin de basculer le terrain en mode paysage.
+         * Lorsque le téléphone est orienté à l'horizontal, aucune rotation n'est appliquée.
          */
         function updatePortraitLandscapeMode() {
+            const isHorizontal = window.innerWidth > window.innerHeight;
+            if (isHorizontal) {
+                isRotatedPortrait = false;
+                document.body.classList.remove('force-landscape-rotate');
+                return;
+            }
             const isTouchLike = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
             isRotatedPortrait = isTouchLike && window.innerHeight > window.innerWidth;
             document.body.classList.toggle('force-landscape-rotate', isRotatedPortrait);
@@ -762,7 +822,16 @@
             try {
                 localStorage.setItem(STORAGE_KEY_NICKNAME, cleanName);
             } catch (err) {}
+            updateFriendlyWelcomeBadge(cleanName);
             return cleanName;
+        }
+
+        function updateFriendlyWelcomeBadge(name) {
+            if (!welcomeFriendlyBadge) return;
+            const trimmed = (name || '').trim();
+            welcomeFriendlyBadge.textContent = trimmed && trimmed !== 'Shérif JH'
+                ? 'Bienvenue ' + trimmed
+                : 'SHÉRIF ROCK’N’ROLL';
         }
 
         function getTop10Scores() {
@@ -950,7 +1019,7 @@
                 const src = ctxAudio.createBufferSource();
                 src.buffer = noiseBuffer;
 
-                const filter = audioCtx.createBiquadFilter();
+                const filter = ctxAudio.createBiquadFilter();
                 filter.type = 'bandpass';
                 filter.Q.value = 1.6;
                 filter.frequency.setValueAtTime(190, now);
@@ -1144,6 +1213,95 @@
         }
 
         /**
+         * Ambiance western / cowboy au générique : thème de guitare twang et rythme de galop.
+         */
+        function playCowboyPluck(freq, duration, gainVal = 0.045) {
+            if (isMuted || !cowboyAmbienceEnabled || gameState !== 'intro') return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                const now = ctxAudio.currentTime;
+                const osc = ctxAudio.createOscillator();
+                const bendOsc = ctxAudio.createOscillator();
+                const bendGain = ctxAudio.createGain();
+                const filter = ctxAudio.createBiquadFilter();
+                const gain = ctxAudio.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now);
+
+                bendOsc.type = 'sine';
+                bendOsc.frequency.setValueAtTime(5.5, now);
+                bendGain.gain.setValueAtTime(freq * 0.015, now);
+                bendOsc.connect(bendGain);
+                bendGain.connect(osc.frequency);
+
+                filter.type = 'bandpass';
+                filter.Q.value = 1.4;
+                filter.frequency.setValueAtTime(freq * 2.4, now);
+                filter.frequency.exponentialRampToValueAtTime(freq * 1.1, now + duration);
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(gainVal, now + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.0008, now + duration);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctxAudio.destination);
+
+                osc.start(now);
+                bendOsc.start(now);
+                osc.stop(now + duration + 0.02);
+                bendOsc.stop(now + duration + 0.02);
+            } catch (err) {}
+        }
+
+        function playCowboyGallopPulse(heavy = false) {
+            if (isMuted || !cowboyAmbienceEnabled || gameState !== 'intro') return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                const now = ctxAudio.currentTime;
+                const osc = ctxAudio.createOscillator();
+                const gain = ctxAudio.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(heavy ? 115 : 145, now);
+                osc.frequency.exponentialRampToValueAtTime(38, now + 0.08);
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(heavy ? 0.065 : 0.035, now + 0.008);
+                gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.09);
+
+                osc.connect(gain);
+                gain.connect(ctxAudio.destination);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } catch (err) {}
+        }
+
+        function startCowboyAmbienceLoop() {
+            if (cowboyMusicTimer) clearInterval(cowboyMusicTimer);
+            // Motif western en Ré mineur / Fa majeur (ambiance saloon / désert)
+            const westernMelody = [
+                146.83, 0, 220.00, 261.63,
+                293.66, 261.63, 220.00, 174.61,
+                146.83, 0, 196.00, 220.00,
+                174.61, 146.83, 130.81, 146.83
+            ];
+            let step = 0;
+            cowboyMusicTimer = setInterval(() => {
+                if (gameState === 'intro' && cowboyAmbienceEnabled && !isMuted) {
+                    const note = westernMelody[step % westernMelody.length];
+                    if (note > 0) {
+                        playCowboyPluck(note, 0.34, 0.045);
+                    }
+                    playCowboyGallopPulse(step % 4 === 0);
+                    step++;
+                }
+            }, 310);
+        }
+
+        /**
          * Détonation d'arme à feu : claquement sec (bruit filtré) + coup grave percutant.
          */
         function playShotSound() {
@@ -1153,7 +1311,6 @@
             try {
                 const now = ctxAudio.currentTime;
 
-                // 1. Claquement sec de poudre / détonation
                 const dur = 0.16;
                 const bufferSize = Math.floor(ctxAudio.sampleRate * dur);
                 const noiseBuffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
@@ -1181,7 +1338,6 @@
                 noiseSrc.start(now);
                 noiseSrc.stop(now + dur + 0.01);
 
-                // 2. Impact grave / recul de canon
                 const punchOsc = ctxAudio.createOscillator();
                 const punchGain = ctxAudio.createGain();
                 punchOsc.type = 'triangle';
@@ -2014,7 +2170,6 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Large bord du chapeau de cowboy
             targetCtx.fillStyle = '#78350f';
             targetCtx.strokeStyle = '#18181b';
             targetCtx.lineWidth = 3;
@@ -2023,14 +2178,12 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Calotte du chapeau de cowboy
             targetCtx.fillStyle = '#92400e';
             targetCtx.beginPath();
             targetCtx.roundRect(-15, -62, 30, 21, 7);
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Bandeau de cuir du chapeau
             targetCtx.fillStyle = '#29180a';
             targetCtx.fillRect(-15, -47, 30, 4);
 
@@ -2063,7 +2216,6 @@
             targetCtx.fill();
             targetCtx.stroke();
 
-            // Flash de détonation au bout du canon
             if (recoilOffset > 3) {
                 targetCtx.fillStyle = '#fde047';
                 targetCtx.strokeStyle = '#ea580c';
@@ -2622,6 +2774,16 @@
             e.preventDefault();
         });
 
+        if (mobileGrenadeBtn) {
+            mobileGrenadeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (gameState !== 'playing') return;
+                const tx = player.aimX || width * 0.5;
+                const ty = player.aimY || height * 0.65;
+                throwGrenade(tx, ty);
+            });
+        }
+
         if (introAvatarCanvas) {
             introAvatarCanvas.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -2629,22 +2791,52 @@
             });
         }
 
-        if (mobileGrenadeBtn) {
-            mobileGrenadeBtn.addEventListener('click', (e) => {
+        if (introJokeBtn) {
+            introJokeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (gameState !== 'playing') return;
-                requestLandscapeLock();
-                const tx = player.aimX || width * 0.5;
-                const ty = player.aimY || height * 0.55;
-                throwGrenade(tx, ty);
+                triggerIntroJokeReaction();
+            });
+        }
+
+        if (introHonkBtn) {
+            introHonkBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                ensureAudio();
+                introHopTimer = 0.4;
+                playCarHornSound('Voiture');
+                if (introJokeBubble) {
+                    introJokeBubble.textContent = 'TUT-TUT ! Place au shérif de Bouleurs ! 📣';
+                }
+            });
+        }
+
+        if (randomNickBtn && playerNicknameInput) {
+            randomNickBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const current = playerNicknameInput.value.trim();
+                const candidates = FUN_NICKNAMES.filter((n) => n !== current);
+                const pool = candidates.length > 0 ? candidates : FUN_NICKNAMES;
+                const picked = pool[Math.floor(Math.random() * pool.length)];
+                playerNicknameInput.value = picked;
+                playerNickname = picked;
+                updateFriendlyWelcomeBadge(picked);
+                introHopTimer = 0.35;
+                if (introJokeBubble) {
+                    introJokeBubble.textContent = 'Joli surnom, ' + picked + ' ! Prêt à faire chauffer le score ? 😄';
+                }
+                try {
+                    localStorage.setItem(STORAGE_KEY_NICKNAME, picked);
+                } catch (err) {}
             });
         }
 
         if (playerNicknameInput) {
             playerNicknameInput.addEventListener('input', () => {
-                playerNickname = playerNicknameInput.value.trim() || 'Shérif JH';
+                const typed = playerNicknameInput.value.trim();
+                playerNickname = typed || 'Shérif JH';
+                updateFriendlyWelcomeBadge(typed);
                 try {
-                    localStorage.setItem(STORAGE_KEY_NICKNAME, playerNicknameInput.value.trim());
+                    localStorage.setItem(STORAGE_KEY_NICKNAME, typed);
                 } catch (err) {}
             });
             playerNicknameInput.addEventListener('keydown', (e) => {
@@ -2655,14 +2847,14 @@
             });
         }
 
-        if (startAdventureBtn) {
-            startAdventureBtn.addEventListener('click', () => {
+        if (introCowboyBtn) {
+            introCowboyBtn.addEventListener('click', () => {
                 ensureAudio();
-                requestLandscapeLock();
-                getCurrentNickname();
-                if (introTurning) return;
-                introTurnProgress = 0;
-                introTurning = true;
+                cowboyAmbienceEnabled = !cowboyAmbienceEnabled;
+                introCowboyBtn.textContent = 'Cowboy : ' + (cowboyAmbienceEnabled ? 'ON' : 'OFF');
+                if (cowboyAmbienceEnabled && !isMuted) {
+                    playCowboyPluck(293.66, 0.35, 0.05);
+                }
             });
         }
 
@@ -2670,7 +2862,7 @@
             introMusicBtn.addEventListener('click', () => {
                 ensureAudio();
                 rockMusicEnabled = !rockMusicEnabled;
-                introMusicBtn.textContent = '🎸 Musique Rock : ' + (rockMusicEnabled ? 'ON' : 'OFF');
+                introMusicBtn.textContent = 'Musique Rock : ' + (rockMusicEnabled ? 'ON' : 'OFF');
             });
         }
 
@@ -2735,10 +2927,12 @@
         syncBodyGameStateClass();
         resizeCanvas();
         loadSavedNickname();
+        updateFriendlyWelcomeBadge(playerNicknameInput ? playerNicknameInput.value.trim() : playerNickname);
         loadScoreHistory();
         renderScoreHistoryLists();
         initBackground();
         loadCustomTargets();
+        startCowboyAmbienceLoop();
         startRockMusicLoop();
         requestAnimationFrame((ts) => {
             lastTimestamp = ts;
