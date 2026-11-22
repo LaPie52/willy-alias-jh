@@ -2,19 +2,21 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Willy alias JH - Le Shérif du Quartier</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
     <style>
+        /* Styles de base pour bloquer le défilement et garantir un affichage plein écran */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
             overflow: hidden;
             user-select: none;
+            -webkit-user-select: none;
             background-color: #18181b;
         }
         .font-cartoon {
@@ -38,6 +40,7 @@
             transform: translate(2px, 2px);
             box-shadow: 1px 1px 0px #18181b;
         }
+        /* Style affiche WANTED parchemin */
         .wanted-poster {
             background:
                 radial-gradient(circle at 12% 14%, rgba(180, 125, 58, 0.22), transparent 36%),
@@ -54,7 +57,9 @@
             width: 100%;
             height: 100%;
             cursor: crosshair;
+            touch-action: none;
         }
+        /* Pivotement paysage sur téléphone tenu en portrait */
         body.force-landscape-rotate #gameCanvas {
             position: fixed;
             top: 50%;
@@ -78,7 +83,7 @@
     <!-- Canvas principal du jeu -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Lecteur audio caché pour la voix -->
+    <!-- Lecteur audio caché pour la voix personnalisée -->
     <audio id="customVoiceAudio" preload="auto" playsinline class="hidden"></audio>
 
     <!-- Barre HUD supérieure épurée -->
@@ -94,7 +99,7 @@
                 <div id="grenadeDisplay" class="font-cartoon text-xl sm:text-2xl text-zinc-900 leading-tight">💣💣💣💣</div>
             </div>
 
-            <div class="bg-sky-200 comic-box rounded-xl px-3 sm:text-sm sm:px-4 py-1.5">
+            <div class="bg-sky-200 comic-box rounded-xl px-3 sm:px-4 py-1.5">
                 <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Temps</div>
                 <div id="timeDisplay" class="font-cartoon text-2xl sm:text-3xl text-zinc-900 leading-tight">60s</div>
             </div>
@@ -126,11 +131,6 @@
         </div>
     </div>
 
-    <!-- Bannière d'info / statut non bloquante -->
-    <div id="statusToast" class="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 z-30 hidden">
-        <div id="statusToastText" class="bg-zinc-900/95 text-amber-300 border-2 border-amber-300 font-bold text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg"></div>
-    </div>
-
     <!-- Bannière spéciale Master Shooter tous les 20 000 points -->
     <div id="masterShooterBanner" class="pointer-events-none fixed top-24 left-1/2 -translate-x-1/2 z-30 hidden">
         <div class="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-300 text-zinc-950 comic-box rounded-2xl px-6 py-2.5 text-center animate-bounce">
@@ -141,6 +141,11 @@
                 20 000 PTS ATTEINTS !
             </div>
         </div>
+    </div>
+
+    <!-- Bannière d'info / statut non bloquante -->
+    <div id="statusToast" class="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 z-30 hidden">
+        <div id="statusToastText" class="bg-zinc-900/95 text-amber-300 border-2 border-amber-300 font-bold text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg"></div>
     </div>
 
     <!-- Écran d'introduction style affiche WANTED -->
@@ -328,6 +333,7 @@
             'Qui veut faire un tour sur la route ? 😎'
         ];
 
+        // Références DOM principales
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const introScreen = document.getElementById('introScreen');
@@ -342,8 +348,6 @@
         const gameOverModal = document.getElementById('gameOverModal');
         const scoreDisplay = document.getElementById('scoreDisplay');
         const grenadeDisplay = document.getElementById('grenadeDisplay');
-        const mobileGrenadeBtn = document.getElementById('mobileGrenadeBtn');
-        const mobileGrenadeCount = document.getElementById('mobileGrenadeCount');
         const timeDisplay = document.getElementById('timeDisplay');
         const finalScoreEl = document.getElementById('finalScore');
         const bestScoreDisplay = document.getElementById('bestScoreDisplay');
@@ -357,12 +361,14 @@
         const statusToastText = document.getElementById('statusToastText');
         const customVoiceAudio = document.getElementById('customVoiceAudio');
 
+        // État des médias et entités du jeu
         let streetBgImg = null;
         let streetBgLoadedLabel = 'défaut';
         let cyclistCustomImg = null;
         let avatarCustomImg = null;
         let targetCatalog = [];
         let toastTimer = null;
+        let masterShooterBannerTimer = null;
         let avatarLoadedStatus = 'recherche...';
         let autoTargetsLoadedCount = 0;
 
@@ -414,12 +420,31 @@
         let rockMusicTimer = null;
         let trafficNoiseGain = null;
 
+        /**
+         * Détecte si l'appareil est un téléphone/tablette tactile en portrait
+         * afin de basculer le terrain en mode paysage.
+         */
         function updatePortraitLandscapeMode() {
             const isTouchLike = window.matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window);
             isRotatedPortrait = isTouchLike && window.innerHeight > window.innerWidth;
             document.body.classList.toggle('force-landscape-rotate', isRotatedPortrait);
         }
 
+        /**
+         * Tente de verrouiller l'orientation matérielle en paysage lorsque supporté.
+         */
+        function requestLandscapeLock() {
+            try {
+                if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } catch (err) {}
+        }
+
+        /**
+         * Détoure les fonds blancs/gris clairs reliés aux bords de l'image
+         * et applique un léger fondu sur le pourtour pour éviter l'effet "carré blanc".
+         */
         function createKeyedTargetCanvas(img) {
             try {
                 const maxSide = 220;
@@ -785,6 +810,62 @@
             } catch (err) {}
         }
 
+        /**
+         * Joue un klaxon audible adapté aux véhicules légers ou poids lourds.
+         */
+        function playCarHornSound(vehicleLabel = '') {
+            if (isMuted) return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                if (ctxAudio.state === 'suspended') {
+                    ctxAudio.resume().catch(() => {});
+                }
+                const now = ctxAudio.currentTime;
+                const isHeavy = /camion|tracteur|pompiers|manouches|poubelles/i.test(vehicleLabel);
+                const baseF1 = isHeavy ? 245 : 415;
+                const baseF2 = isHeavy ? 305 : 523;
+                const doubleBeep = !isHeavy && Math.random() < 0.55;
+
+                const scheduleHonkBurst = (offset, dur) => {
+                    const osc1 = ctxAudio.createOscillator();
+                    const osc2 = ctxAudio.createOscillator();
+                    const filter = ctxAudio.createBiquadFilter();
+                    const gain = ctxAudio.createGain();
+
+                    osc1.type = 'sawtooth';
+                    osc2.type = 'square';
+                    osc1.frequency.setValueAtTime(baseF1, now + offset);
+                    osc2.frequency.setValueAtTime(baseF2, now + offset);
+
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(isHeavy ? 1400 : 2200, now + offset);
+
+                    gain.gain.setValueAtTime(0.001, now + offset);
+                    gain.gain.linearRampToValueAtTime(0.14, now + offset + 0.015);
+                    gain.gain.setValueAtTime(0.14, now + offset + Math.max(0.03, dur - 0.04));
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + offset + dur);
+
+                    osc1.connect(filter);
+                    osc2.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctxAudio.destination);
+
+                    osc1.start(now + offset);
+                    osc2.start(now + offset);
+                    osc1.stop(now + offset + dur + 0.02);
+                    osc2.stop(now + offset + dur + 0.02);
+                };
+
+                if (doubleBeep) {
+                    scheduleHonkBurst(0, 0.13);
+                    scheduleHonkBurst(0.17, 0.22);
+                } else {
+                    scheduleHonkBurst(0, isHeavy ? 0.42 : 0.30);
+                }
+            } catch (err) {}
+        }
+
         function triggerHighwayAmbienceEvent() {
             if (isMuted || gameState !== 'playing') return;
             const vehicleTargets = targets.filter((t) =>
@@ -857,31 +938,6 @@
                     step++;
                 }
             }, 260);
-        }
-
-        function playCarHornSound() {
-            if (isMuted) return;
-            const ctxAudio = ensureAudio();
-            if (!ctxAudio) return;
-            try {
-                const now = ctxAudio.currentTime;
-                const osc1 = ctxAudio.createOscillator();
-                const osc2 = ctxAudio.createOscillator();
-                const gain = ctxAudio.createGain();
-                osc1.type = 'sawtooth';
-                osc2.type = 'triangle';
-                osc1.frequency.setValueAtTime(390, now);
-                osc2.frequency.setValueAtTime(490, now);
-                gain.gain.setValueAtTime(0.065, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-                osc1.connect(gain);
-                osc2.connect(gain);
-                gain.connect(ctxAudio.destination);
-                osc1.start(now);
-                osc2.start(now);
-                osc1.stop(now + 0.33);
-                osc2.stop(now + 0.33);
-            } catch (err) {}
         }
 
         function playShotSound() {
@@ -965,15 +1021,6 @@
             }
         }
 
-        function checkTenThousandShout() {
-            const currentMilestone = Math.floor(Math.max(0, score) / 10000) * 10000;
-            if (currentMilestone >= 10000 && currentMilestone > lastTenThousandMilestone) {
-                lastTenThousandMilestone = currentMilestone;
-                playJohnnyShoutVoice();
-            }
-            checkTwentyThousandMasterShooter();
-        }
-
         function playMasterShooterFanfareSound() {
             if (isMuted) return;
             const ctxAudio = ensureAudio();
@@ -1011,59 +1058,58 @@
 
         function spawnConfettiBurst(milestoneValue) {
             const colors = ['#ef4444', '#facc15', '#22c55e', '#3b82f6', '#ec4899', '#f97316', '#a855f7'];
-        function playCarHornSound(vehicleLabel = '') {
-            if (isMuted) return;
-            const ctxAudio = ensureAudio();
-            if (!ctxAudio) return;
-            try {
-                if (ctxAudio.state === 'suspended') {
-                    ctxAudio.resume().catch(() => {});
+            const count = 95;
+            for (let i = 0; i < count; i++) {
+                confettiParticles.push({
+                    x: width * (0.1 + Math.random() * 0.8),
+                    y: -15 - Math.random() * 120,
+                    vx: (Math.random() - 0.5) * 140,
+                    vy: 130 + Math.random() * 210,
+                    w: 7 + Math.random() * 7,
+                    h: 5 + Math.random() * 6,
+                    rot: Math.random() * Math.PI * 2,
+                    vRot: (Math.random() - 0.5) * 10,
+                    swayPhase: Math.random() * Math.PI * 2,
+                    color: colors[i % colors.length],
+                    life: 2.4 + Math.random() * 1.1
+                });
+            }
+
+            playMasterShooterFanfareSound();
+
+            if (masterShooterBanner) {
+                if (masterShooterSubtext) {
+                    masterShooterSubtext.textContent = milestoneValue.toLocaleString('fr-FR') + ' PTS ATTEINTS !';
                 }
-                const now = ctxAudio.currentTime;
-                const isHeavy = /camion|tracteur|pompiers|manouches|poubelles/i.test(vehicleLabel);
-                const baseF1 = isHeavy ? 245 : 415;
-                const baseF2 = isHeavy ? 305 : 523;
-                const doubleBeep = !isHeavy && Math.random() < 0.55;
-
-                const scheduleHonkBurst = (offset, dur) => {
-                    const osc1 = ctxAudio.createOscillator();
-                    const osc2 = ctxAudio.createOscillator();
-                    const filter = ctxAudio.createBiquadFilter();
-                    const gain = ctxAudio.createGain();
-
-                    osc1.type = 'sawtooth';
-                    osc2.type = 'square';
-                    osc1.frequency.setValueAtTime(baseF1, now + offset);
-                    osc2.frequency.setValueAtTime(baseF2, now + offset);
-
-                    filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(isHeavy ? 1400 : 2200, now + offset);
-
-                    gain.gain.setValueAtTime(0.001, now + offset);
-                    gain.gain.linearRampToValueAtTime(0.14, now + offset + 0.015);
-                    gain.gain.setValueAtTime(0.14, now + offset + Math.max(0.03, dur - 0.04));
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + offset + dur);
-
-                    osc1.connect(filter);
-                    osc2.connect(filter);
-                    filter.connect(gain);
-                    gain.connect(ctxAudio.destination);
-
-                    osc1.start(now + offset);
-                    osc2.start(now + offset);
-                    osc1.stop(now + offset + dur + 0.02);
-                    osc2.stop(now + offset + dur + 0.02);
-                };
-
-                if (doubleBeep) {
-                    scheduleHonkBurst(0, 0.13);
-                    scheduleHonkBurst(0.17, 0.22);
-                } else {
-                    scheduleHonkBurst(0, isHeavy ? 0.42 : 0.30);
-                }
-            } catch (err) {}
+                masterShooterBanner.classList.remove('hidden');
+                clearTimeout(masterShooterBannerTimer);
+                masterShooterBannerTimer = setTimeout(() => {
+                    masterShooterBanner.classList.add('hidden');
+                }, 2600);
+            }
         }
 
+        function checkTwentyThousandMasterShooter() {
+            const currentTwentyMilestone = Math.floor(Math.max(0, score) / 20000) * 20000;
+            if (currentTwentyMilestone >= 20000 && currentTwentyMilestone > lastTwentyThousandMilestone) {
+                lastTwentyThousandMilestone = currentTwentyMilestone;
+                spawnConfettiBurst(currentTwentyMilestone);
+            }
+        }
+
+        function checkTenThousandShout() {
+            const currentMilestone = Math.floor(Math.max(0, score) / 10000) * 10000;
+            if (currentMilestone >= 10000 && currentMilestone > lastTenThousandMilestone) {
+                lastTenThousandMilestone = currentMilestone;
+                playJohnnyShoutVoice();
+            }
+            checkTwentyThousandMasterShooter();
+        }
+
+        /**
+         * Convertit les coordonnées écran/tactiles vers l'espace logique du canvas,
+         * y compris lorsque le jeu est pivoté en mode paysage sur téléphone.
+         */
         function mapClientToGameCoords(clientX, clientY) {
             if (!isRotatedPortrait) {
                 return { x: clientX, y: clientY };
@@ -1459,7 +1505,7 @@
                 const pts = target.points * combo;
                 score += pts;
                 if (!fromGrenade) {
-                    playCarHornSound();
+                    playCarHornSound(target.label);
                 }
                 floatingTexts.push({
                     x: target.x,
@@ -1477,7 +1523,6 @@
         function updateGrenadeDisplay() {
             const icons = '💣'.repeat(Math.max(0, grenades)) || '—';
             if (grenadeDisplay) grenadeDisplay.textContent = icons;
-            if (mobileGrenadeCount) mobileGrenadeCount.textContent = String(grenades);
         }
 
         function updateHud() {
@@ -1779,6 +1824,47 @@
             const bob = t.bobPhase ? Math.sin(totalTime * 8 + t.bobPhase) * 2.5 : 0;
             ctx.translate(t.x, t.y + bob);
 
+            if (t.type === 'bird') {
+                const dir = t.vx >= 0 ? 1 : -1;
+                const flap = Math.sin(totalTime * 16 + (t.wingPhase || 0)) * 11;
+                ctx.save();
+                ctx.scale(dir, 1);
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.strokeStyle = '#18181b';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 18, 11, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(15, -4, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.moveTo(22, -5);
+                ctx.lineTo(31, -2);
+                ctx.lineTo(22, 1);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.beginPath();
+                ctx.moveTo(-6, -2);
+                ctx.quadraticCurveTo(4, -18 + flap, 12, -2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.restore();
+                ctx.restore();
+                return;
+            }
+
             const drawable = t.keyedCanvas || (t.img && t.img.complete && t.img.naturalWidth > 0 ? t.img : null);
             if (t.type === 'custom' && drawable) {
                 const movingRight = t.vx >= 0;
@@ -1997,6 +2083,17 @@
                 for (let i = targets.length - 1; i >= 0; i--) {
                     const t = targets[i];
                     t.x += t.vx * dt;
+                    if (t.honkTimer && t.honkTimer > 0) {
+                        t.honkTimer = Math.max(0, t.honkTimer - dt);
+                    }
+                    if (t.canHonk && t.x > width * 0.12 && t.x < width * 0.88) {
+                        t.nextHonkCooldown = (t.nextHonkCooldown || 1.2) - dt;
+                        if (t.nextHonkCooldown <= 0) {
+                            t.honkTimer = 0.7;
+                            t.nextHonkCooldown = 2.2 + Math.random() * 2.4;
+                            playCarHornSound(t.label);
+                        }
+                    }
                     if (t.x < -180 || t.x > width + 180) {
                         targets.splice(i, 1);
                     }
@@ -2070,6 +2167,7 @@
             ctx.save();
             if (screenShake > 0) {
                 ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+                screenShake = Math.max(0, screenShake - dt * 45);
             }
 
             if (streetBgImg && streetBgImg.complete && streetBgImg.naturalWidth > 0) {
@@ -2179,10 +2277,15 @@
             requestAnimationFrame(updateAndRender);
         }
 
+        // Écouteurs d'événements
         window.addEventListener('resize', resizeCanvas);
         window.addEventListener('orientationchange', () => {
             setTimeout(resizeCanvas, 120);
         });
+
+        window.addEventListener('pointerdown', () => {
+            ensureAudio();
+        }, { passive: true });
 
         canvas.addEventListener('mousemove', (e) => {
             const pt = mapClientToGameCoords(e.clientX, e.clientY);
@@ -2217,13 +2320,6 @@
         canvas.addEventListener('contextmenu', (e) => {
             e.preventDefault();
         });
-
-        if (mobileGrenadeBtn) {
-            mobileGrenadeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                throwGrenade(player.aimX || width * 0.5, player.aimY || height * 0.55);
-            });
-        }
 
         if (introAvatarCanvas) {
             introAvatarCanvas.addEventListener('click', triggerIntroJokeReaction);
@@ -2300,10 +2396,11 @@
                     localStorage.removeItem(STORAGE_KEY_BEST);
                 } catch (err) {}
                 renderScoreHistoryLists();
-        window.addEventListener('pointerdown', () => {
-            ensureAudio();
-        }, { passive: true });
+                showToast('Historique des scores effacé.');
+            });
+        }
 
+        // Initialisation complète au chargement
         resizeCanvas();
         loadScoreHistory();
         renderScoreHistoryLists();
