@@ -61,7 +61,7 @@
             left: 50%;
             width: 100vh;
             height: 100vw;
-            transform: translate(-50%, -50%) rotate(90deg);
+            transform: translate(-50%, -50%) rotate(90deg) scale(0.92);
             transform-origin: center center;
         }
         @keyframes floatSlow {
@@ -309,7 +309,7 @@
                 { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'left', points: 220, speed: 275, size: 140, color: '#64748b' },
                 { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 152, color: '#f8fafc' },
                 { name: 'MimiCar', src: './assets/images/mimiCar.jpg', lane: 'road', facing: 'right', points: 230, speed: 240, size: 138, color: '#86efac' },
-                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'sidewalk', facing: 'right', points: 150, speed: 130, size: 92, color: '#334155' },
+                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'road', facing: 'right', points: 150, speed: 155, size: 112, color: '#334155' },
                 { name: 'Chat', src: './assets/images/chat.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 190, size: 80, color: '#d97706' },
                 { name: 'Chien', src: './assets/images/chien.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 205, size: 86, color: '#eab308' },
                 { name: 'Rat', src: './assets/images/rat.jpg', lane: 'sidewalk', facing: 'right', points: 220, speed: 235, size: 76, color: '#9ca3af' },
@@ -787,10 +787,24 @@
 
         function triggerHighwayAmbienceEvent() {
             if (isMuted || gameState !== 'playing') return;
+            const vehicleTargets = targets.filter((t) =>
+                t.type === 'custom' &&
+                t.lane === 'road' &&
+                t.x > width * 0.08 &&
+                t.x < width * 0.92
+            );
+
+            if (vehicleTargets.length > 0 && Math.random() < 0.75) {
+                const caller = vehicleTargets[Math.floor(Math.random() * vehicleTargets.length)];
+                caller.honkTimer = 0.75;
+                playCarHornSound(caller.label);
+                return;
+            }
+
             const roll = Math.random();
-            if (roll < 0.55) {
+            if (roll < 0.65) {
                 playCarHornSound();
-            } else if (roll < 0.8) {
+            } else if (roll < 0.85) {
                 playHighwayWhooshSound();
             } else {
                 playAngryPersonGroanSound();
@@ -997,55 +1011,55 @@
 
         function spawnConfettiBurst(milestoneValue) {
             const colors = ['#ef4444', '#facc15', '#22c55e', '#3b82f6', '#ec4899', '#f97316', '#a855f7'];
-            const count = 95;
-            for (let i = 0; i < count; i++) {
-                confettiParticles.push({
-                    x: Math.random() * width,
-                    y: -15 - Math.random() * 140,
-                    w: 7 + Math.random() * 7,
-                    h: 5 + Math.random() * 6,
-                    vx: (Math.random() - 0.5) * 180,
-                    vy: 110 + Math.random() * 190,
-                    rot: Math.random() * Math.PI * 2,
-                    vRot: (Math.random() - 0.5) * 10,
-                    swayPhase: Math.random() * Math.PI * 2,
-                    color: colors[i % colors.length],
-                    life: 2.4 + Math.random() * 1.1
-                });
-            }
-
-            if (masterShooterBanner) {
-                if (masterShooterSubtext) {
-                    masterShooterSubtext.textContent = milestoneValue.toLocaleString('fr-FR') + ' PTS ATTEINTS !';
-                }
-                masterShooterBanner.classList.remove('hidden');
-                setTimeout(() => {
-                    if (masterShooterBanner) masterShooterBanner.classList.add('hidden');
-                }, 2600);
-            }
-
-            floatingTexts.push({
-                x: width * 0.5,
-                y: height * 0.34,
-                text: '★ MASTER SHOOTER ★',
-                color: '#fde047',
-                life: 1.6
-            });
-        }
-
-        function checkTwentyThousandMasterShooter() {
-            const currentMilestone = Math.floor(Math.max(0, score) / 20000) * 20000;
-            if (currentMilestone >= 20000 && currentMilestone > lastTwentyThousandMilestone) {
-                lastTwentyThousandMilestone = currentMilestone;
-                playMasterShooterFanfareSound();
-                spawnConfettiBurst(currentMilestone);
-            }
-        }
-
-        function requestLandscapeLock() {
+        function playCarHornSound(vehicleLabel = '') {
+            if (isMuted) return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
             try {
-                if (screen.orientation && typeof screen.orientation.lock === 'function') {
-                    screen.orientation.lock('landscape').catch(() => {});
+                if (ctxAudio.state === 'suspended') {
+                    ctxAudio.resume().catch(() => {});
+                }
+                const now = ctxAudio.currentTime;
+                const isHeavy = /camion|tracteur|pompiers|manouches|poubelles/i.test(vehicleLabel);
+                const baseF1 = isHeavy ? 245 : 415;
+                const baseF2 = isHeavy ? 305 : 523;
+                const doubleBeep = !isHeavy && Math.random() < 0.55;
+
+                const scheduleHonkBurst = (offset, dur) => {
+                    const osc1 = ctxAudio.createOscillator();
+                    const osc2 = ctxAudio.createOscillator();
+                    const filter = ctxAudio.createBiquadFilter();
+                    const gain = ctxAudio.createGain();
+
+                    osc1.type = 'sawtooth';
+                    osc2.type = 'square';
+                    osc1.frequency.setValueAtTime(baseF1, now + offset);
+                    osc2.frequency.setValueAtTime(baseF2, now + offset);
+
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(isHeavy ? 1400 : 2200, now + offset);
+
+                    gain.gain.setValueAtTime(0.001, now + offset);
+                    gain.gain.linearRampToValueAtTime(0.14, now + offset + 0.015);
+                    gain.gain.setValueAtTime(0.14, now + offset + Math.max(0.03, dur - 0.04));
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + offset + dur);
+
+                    osc1.connect(filter);
+                    osc2.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctxAudio.destination);
+
+                    osc1.start(now + offset);
+                    osc2.start(now + offset);
+                    osc1.stop(now + offset + dur + 0.02);
+                    osc2.stop(now + offset + dur + 0.02);
+                };
+
+                if (doubleBeep) {
+                    scheduleHonkBurst(0, 0.13);
+                    scheduleHonkBurst(0.17, 0.22);
+                } else {
+                    scheduleHonkBurst(0, isHeavy ? 0.42 : 0.30);
                 }
             } catch (err) {}
         }
@@ -1071,7 +1085,7 @@
             canvas.width = width;
             canvas.height = height;
             player.x = width * 0.5;
-            player.y = height * 0.86;
+            player.y = isRotatedPortrait ? height * 0.80 : height * 0.86;
             if (player.aimX === 0 && player.aimY === 0) {
                 player.aimX = width * 0.5;
                 player.aimY = height * 0.55;
@@ -1296,13 +1310,17 @@
                 } else if (tpl.lane === 'sidewalk') {
                     yPos = height * (0.62 + Math.random() * 0.04);
                 } else {
-                    yPos = height * (0.76 + Math.random() * 0.12);
+                    const roadMin = isRotatedPortrait ? 0.68 : 0.75;
+                    const roadSpan = isRotatedPortrait ? 0.09 : 0.12;
+                    yPos = height * (roadMin + Math.random() * roadSpan);
                 }
                 const baseSize = tpl.size || 95;
                 const speedFactor = isDemo ? 0.55 : 1;
+                const canHonk = tpl.lane === 'road' && Math.random() < 0.45;
                 targets.push({
                     type: 'custom',
                     label: tpl.name,
+                    lane: tpl.lane || 'road',
                     img: tpl.img,
                     keyedCanvas: tpl.keyedCanvas,
                     loaded: tpl.loaded,
@@ -1316,6 +1334,9 @@
                     h: baseSize * 0.75,
                     points: Number(tpl.points) || 200,
                     isCyclist: false,
+                    canHonk: canHonk,
+                    honkTimer: 0,
+                    nextHonkCooldown: 0.7 + Math.random() * 1.4,
                     bobPhase: Math.random() * Math.PI * 2
                 });
             }
@@ -1806,38 +1827,22 @@
                 ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
                 ctx.restore();
 
-                ctx.restore();
-                return;
-            }
+                if (t.honkTimer && t.honkTimer > 0) {
+                    ctx.save();
+                    ctx.fillStyle = '#fef08a';
+                    ctx.strokeStyle = '#18181b';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.roundRect(-38, -drawH / 2 - 30, 76, 22, 9);
+                    ctx.fill();
+                    ctx.stroke();
 
-            if (t.type === 'bird') {
-                const dir = t.vx >= 0 ? 1 : -1;
-                const flap = Math.sin(totalTime * 14 + (t.wingPhase || 0)) * 10;
-                ctx.scale(dir, 1);
-
-                ctx.fillStyle = '#334155';
-                ctx.strokeStyle = '#18181b';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 14, 7, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                ctx.fillStyle = '#f59e0b';
-                ctx.beginPath();
-                ctx.moveTo(13, -1);
-                ctx.lineTo(20, 1);
-                ctx.lineTo(13, 3);
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.fillStyle = '#475569';
-                ctx.beginPath();
-                ctx.moveTo(-4, -2);
-                ctx.quadraticCurveTo(2, -16 + flap, 10, -4);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
+                    ctx.fillStyle = '#18181b';
+                    ctx.font = '900 11px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('🔊 BIP-BIP!', 0, -drawH / 2 - 15);
+                    ctx.restore();
+                }
 
                 ctx.restore();
                 return;
@@ -1920,8 +1925,16 @@
                 for (let i = targets.length - 1; i >= 0; i--) {
                     const t = targets[i];
                     t.x += t.vx * dt;
-                    if (t.type === 'bird') {
-                        t.y += Math.sin(totalTime * 3.5 + (t.bobPhase || 0)) * 22 * dt;
+                    if (t.honkTimer && t.honkTimer > 0) {
+                        t.honkTimer = Math.max(0, t.honkTimer - dt);
+                    }
+                    if (t.canHonk && t.x > width * 0.12 && t.x < width * 0.88) {
+                        t.nextHonkCooldown = (t.nextHonkCooldown || 1.2) - dt;
+                        if (t.nextHonkCooldown <= 0) {
+                            t.honkTimer = 0.7;
+                            t.nextHonkCooldown = 2.2 + Math.random() * 2.4;
+                            playCarHornSound(t.label);
+                        }
                     }
                     if (t.x < -180 || t.x > width + 180) {
                         targets.splice(i, 1);
@@ -1972,7 +1985,7 @@
                 highwayAmbienceTimer -= dt;
                 if (highwayAmbienceTimer <= 0) {
                     triggerHighwayAmbienceEvent();
-                    highwayAmbienceTimer = 2.4 + Math.random() * 2.2;
+                    highwayAmbienceTimer = 1.6 + Math.random() * 1.6;
                 }
 
                 spawnTimer -= dt;
@@ -2060,7 +2073,28 @@
             }
 
             if (streetBgImg && streetBgImg.complete && streetBgImg.naturalWidth > 0) {
-                ctx.drawImage(streetBgImg, 0, 0, width, height);
+                if (isRotatedPortrait) {
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(0, 0, width, height);
+                    const imgRatio = streetBgImg.naturalWidth / Math.max(1, streetBgImg.naturalHeight);
+                    const viewRatio = width / Math.max(1, height);
+                    let drawW = width;
+                    let drawH = height;
+                    let drawX = 0;
+                    let drawY = 0;
+                    if (viewRatio > imgRatio) {
+                        drawW = width;
+                        drawH = width / imgRatio;
+                        drawY = Math.min(0, height - drawH);
+                    } else {
+                        drawH = height;
+                        drawW = height * imgRatio;
+                        drawX = (width - drawW) * 0.5;
+                    }
+                    ctx.drawImage(streetBgImg, drawX, drawY, drawW, drawH);
+                } else {
+                    ctx.drawImage(streetBgImg, 0, 0, width, height);
+                }
             } else {
                 drawDefaultStreetBackground();
             }
@@ -2266,9 +2300,9 @@
                     localStorage.removeItem(STORAGE_KEY_BEST);
                 } catch (err) {}
                 renderScoreHistoryLists();
-                showToast('Historique des scores effacé.');
-            });
-        }
+        window.addEventListener('pointerdown', () => {
+            ensureAudio();
+        }, { passive: true });
 
         resizeCanvas();
         loadScoreHistory();
