@@ -1174,11 +1174,160 @@
             loadImageWithFallback(
                 [ADMIN_ASSETS_CONFIG.cyclist, ADMIN_ASSETS_CONFIG.cyclistFallback].filter(Boolean),
                 (img) => {
-                    cyclistImg = removeWhiteBackgroundToCanvas(img);
+                    cyclistImg = isolateScooterRiderSprite(img);
                 }
             );
             if (customVoiceAudio && ADMIN_ASSETS_CONFIG.voiceAudio) {
                 customVoiceAudio.src = ADMIN_ASSETS_CONFIG.voiceAudio;
+            }
+        }
+
+        // Isole la femme et sa trottinette en supprimant les fonds clairs extérieurs et les éléments parasites latéraux
+        function isolateScooterRiderSprite(img) {
+            try {
+                const cleaned = removeWhiteBackgroundToCanvas(img);
+                const w = cleaned.width || img.naturalWidth || img.width;
+                const h = cleaned.height || img.naturalHeight || img.height;
+                if (!w || !h) return cleaned;
+
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                const g = c.getContext('2d');
+                g.drawImage(cleaned, 0, 0, w, h);
+
+                const imageData = g.getImageData(0, 0, w, h);
+                const data = imageData.data;
+
+                // Nettoie les fonds clairs/gris clairs isolés (y compris à l'intérieur des cadres blancs de photo)
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const gr = data[i + 1];
+                    const b = data[i + 2];
+                    const maxC = Math.max(r, gr, b);
+                    const minC = Math.min(r, gr, b);
+                    if (minC >= 195 && (maxC - minC) <= 28) {
+                        data[i + 3] = 0;
+                    }
+                }
+                g.putImageData(imageData, 0, 0);
+
+                // Trouve la composante connexe principale (la femme et sa trottinette) pour éliminer les petits objets/bords détachés
+                const visited = new Uint8Array(w * h);
+                const components = [];
+
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const startPos = y * w + x;
+                        if (visited[startPos]) continue;
+                        if (data[startPos * 4 + 3] <= 25) {
+                            visited[startPos] = 1;
+                            continue;
+                        }
+
+                        const queue = [startPos];
+                        visited[startPos] = 1;
+                        const pixels = [];
+                        let minX = x, maxX = x, minY = y, maxY = y;
+
+                        while (queue.length > 0) {
+                            const cur = queue.pop();
+                            pixels.push(cur);
+                            const cx = cur % w;
+                            const cy = (cur - cx) / w;
+                            if (cx < minX) minX = cx;
+                            if (cx > maxX) maxX = cx;
+                            if (cy < minY) minY = cy;
+                            if (cy > maxY) maxY = cy;
+
+                            const neighbors = [
+                                cy > 0 ? cur - w : -1,
+                                cy < h - 1 ? cur + w : -1,
+                                cx > 0 ? cur - 1 : -1,
+                                cx < w - 1 ? cur + 1 : -1
+                            ];
+                            for (let n = 0; n < neighbors.length; n++) {
+                                const np = neighbors[n];
+                                if (np >= 0 && !visited[np]) {
+                                    visited[np] = 1;
+                                    if (data[np * 4 + 3] > 25) {
+                                        queue.push(np);
+                                    }
+                                }
+                            }
+                        }
+
+                        components.push({
+                            pixels,
+                            count: pixels.length,
+                            minX,
+                            maxX,
+                            minY,
+                            maxY,
+                            centerX: (minX + maxX) * 0.5,
+                            centerY: (minY + maxY) * 0.5
+                        });
+                    }
+                }
+
+                if (components.length > 1) {
+                    components.sort((a, b) => b.count - a.count);
+                    const mainComp = components[0];
+                    const keepMask = new Uint8Array(w * h);
+
+                    mainComp.pixels.forEach((p) => { keepMask[p] = 1; });
+
+                    // Conserve les composantes proches de la silhouette principale (ex: roue de trottinette ou mèche légèrement séparée)
+                    for (let i = 1; i < components.length; i++) {
+                        const comp = components[i];
+                        const nearMain =
+                            comp.minX <= mainComp.maxX + w * 0.08 &&
+                            comp.maxX >= mainComp.minX - w * 0.08 &&
+                            comp.minY <= mainComp.maxY + h * 0.08 &&
+                            comp.maxY >= mainComp.minY - h * 0.08;
+                        if (nearMain && comp.count >= mainComp.count * 0.015) {
+                            comp.pixels.forEach((p) => { keepMask[p] = 1; });
+                        }
+                    }
+
+                    for (let pos = 0; pos < w * h; pos++) {
+                        if (!keepMask[pos]) {
+                            data[pos * 4 + 3] = 0;
+                        }
+                    }
+                    g.putImageData(imageData, 0, 0);
+                }
+
+                // Recadre autour de la femme et de sa trottinette
+                let cropMinX = w, cropMaxX = 0, cropMinY = h, cropMaxY = 0;
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        if (data[(y * w + x) * 4 + 3] > 20) {
+                            if (x < cropMinX) cropMinX = x;
+                            if (x > cropMaxX) cropMaxX = x;
+                            if (y < cropMinY) cropMinY = y;
+                            if (y > cropMaxY) cropMaxY = y;
+                        }
+                    }
+                }
+
+                if (cropMaxX > cropMinX && cropMaxY > cropMinY) {
+                    const pad = 4;
+                    const sx = Math.max(0, cropMinX - pad);
+                    const sy = Math.max(0, cropMinY - pad);
+                    const sw = Math.min(w - sx, (cropMaxX - cropMinX) + pad * 2);
+                    const sh = Math.min(h - sy, (cropMaxY - cropMinY) + pad * 2);
+
+                    const outCanvas = document.createElement('canvas');
+                    outCanvas.width = sw;
+                    outCanvas.height = sh;
+                    outCanvas.getContext('2d').drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh);
+                    return outCanvas;
+                }
+
+                return c;
+            } catch (err) {
+                return img;
             }
         }
 
@@ -1277,7 +1426,7 @@
         }
 
         function getLaneGeometry() {
-            const sidewalkY = height * 0.61;
+            const sidewalkY = height * 0.61 + 2;
             const roadTopY = height * 0.69 + 38;
             const roadBottomY = height * 0.85 + 38;
             return { sidewalkY, roadTopY, roadBottomY };
@@ -1291,7 +1440,7 @@
                 const goRight = Math.random() < 0.5;
                 targets.push({
                     type: 'cyclist',
-                    name: 'Cycliste (Ne pas tirer !)',
+                    name: 'Mimi (Ne pas tirer !)',
                     x: goRight ? -110 : width + 110,
                     y: sidewalkY + (Math.random() * 10 - 5),
                     vx: (goRight ? 1 : -1) * (155 + Math.random() * 45),
@@ -1927,7 +2076,9 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('MIMICAR -10000', 0, badgeTopY + 13);
             } else if (t.isFriendly || t.points < 0) {
-                const badgeText = t.name === 'Mimi' ? 'MIMI -5000' : t.type === 'cyclist' ? 'CYCLISTE -1000' : 'GYROPHARE -1000';
+                const badgeText = (t.name === 'Mimi' || t.type === 'cyclist')
+                    ? 'MIMI -1000'
+                    : (t.name === 'Mimi' ? 'MIMI -5000' : 'GYROPHARE -1000');
                 ctx.fillStyle = 'rgba(225, 29, 72, 0.94)';
                 ctx.beginPath();
                 ctx.roundRect(-52, badgeTopY, 104, 20, 8);
