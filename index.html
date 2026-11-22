@@ -40,10 +40,6 @@
             height: 100%;
             cursor: crosshair;
         }
-        .drop-active {
-            outline: 4px dashed #facc15;
-            outline-offset: -8px;
-        }
     </style>
 </head>
 <body id="gameRoot" class="relative w-screen h-screen overflow-hidden bg-zinc-900">
@@ -51,15 +47,10 @@
     <!-- Canvas principal du jeu -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- Entrées fichiers cachées -->
-    <input type="file" id="bgFileInput" accept="image/*" class="hidden" />
-    <input type="file" id="cyclistFileInput" accept="image/*" class="hidden" />
-    <input type="file" id="avatarFileInput" accept="image/*" class="hidden" />
-    <input type="file" id="voiceFileInput" accept="audio/*" class="hidden" />
-    <input type="file" id="customTargetFileInput" accept="image/*" class="hidden" />
+    <!-- Lecteur audio caché pour la voix -->
     <audio id="customVoiceAudio" preload="auto" playsinline class="hidden"></audio>
 
-    <!-- Barre HUD supérieure -->
+    <!-- Barre HUD supérieure épurée -->
     <div id="hudBar" class="pointer-events-none fixed top-0 left-0 right-0 z-20 p-3 sm:p-4 flex flex-wrap items-start justify-between gap-2">
         <div class="flex flex-wrap items-center gap-2 sm:gap-3">
             <div class="bg-amber-300 comic-box rounded-xl px-3 sm:px-4 py-1.5">
@@ -83,20 +74,8 @@
         </div>
 
         <div class="pointer-events-auto flex flex-wrap items-center gap-2">
-            <button id="uploadBgBtn" type="button" class="comic-btn bg-white hover:bg-amber-100 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
-                📷 Rue
-            </button>
-            <button id="uploadCyclistBtn" type="button" class="comic-btn bg-pink-200 hover:bg-pink-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
-                🚴 Cycliste
-            </button>
-            <button id="uploadAvatarBtn" type="button" class="comic-btn bg-lime-200 hover:bg-lime-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
-                🪖 Avatar
-            </button>
-            <button id="uploadVoiceBtn" type="button" class="comic-btn bg-violet-200 hover:bg-violet-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
-                🎙️ Audio voix
-            </button>
-            <button id="openCustomTargetsBtn" type="button" class="comic-btn bg-emerald-200 hover:bg-emerald-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer">
-                🚗➕ Mes cibles (<span id="customTargetsCount">0</span>)
+            <button id="openScoresBtn" type="button" class="comic-btn bg-yellow-200 hover:bg-yellow-300 text-zinc-900 font-bold text-xs sm:text-sm px-3 py-2 rounded-xl cursor-pointer" title="Voir l'historique des scores">
+                🏆 Scores
             </button>
             <button id="muteBtn" type="button" class="comic-btn bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-bold text-sm px-3 py-2 rounded-xl cursor-pointer" title="Couper / activer le son">
                 🔊
@@ -142,9 +121,6 @@
                 <canvas id="introAvatarCanvas" width="240" height="240" class="w-44 h-44 sm:w-56 sm:h-56 rounded-2xl border-4 border-zinc-900 bg-zinc-800 shadow-lg"></canvas>
                 <div id="adminAssetDebugInfo" class="mt-1.5 text-[11px] font-semibold text-zinc-600"></div>
                 <div class="mt-2 flex flex-wrap justify-center gap-2">
-                    <button id="introLoadAvatarBtn" type="button" class="comic-btn bg-lime-200 hover:bg-lime-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
-                        🖼️ Charger l'image avatar
-                    </button>
                     <button id="introMusicBtn" type="button" class="comic-btn bg-amber-200 hover:bg-amber-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
                         🎸 Musique Rock : ON
                     </button>
@@ -157,72 +133,38 @@
         </div>
     </div>
 
-    <!-- Modale de gestion des cibles personnalisées -->
-    <div id="customTargetsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
-        <div class="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white comic-box rounded-3xl p-5 sm:p-6 text-zinc-900 space-y-4">
-            <div class="flex items-center justify-between border-b-2 border-zinc-200 pb-3">
-                <h2 class="font-cartoon text-3xl text-zinc-900">🚗➕ MES CIBLES PERSONNALISÉES</h2>
-                <button id="closeCustomTargetsBtn" type="button" class="comic-btn bg-zinc-200 hover:bg-zinc-300 font-black text-sm px-3 py-1 rounded-xl cursor-pointer">✕</button>
+    <!-- Modale d'historique des scores -->
+    <div id="scoresModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4">
+        <div class="max-w-lg w-full max-h-[88vh] overflow-y-auto bg-amber-50 comic-box rounded-3xl p-5 sm:p-6 text-zinc-900 space-y-4">
+            <div class="flex items-center justify-between border-b-2 border-zinc-300 pb-3">
+                <h2 class="font-cartoon text-3xl text-zinc-900">🏆 HISTORIQUE DES SCORES</h2>
+                <button id="closeScoresBtn" type="button" class="comic-btn bg-zinc-200 hover:bg-zinc-300 font-black text-sm px-3 py-1 rounded-xl cursor-pointer">✕</button>
             </div>
 
-            <p class="text-xs sm:text-sm text-zinc-600">
-                Ajoute tes propres véhicules ou animaux et indique dans quel sens regarde l'image d'origine (<strong>➡️ Droite</strong> ou <strong>⬅️ Gauche</strong>) pour qu'elle avance toujours vers l'avant ! Tu peux aussi inverser le sens de n'importe quelle cible ci-dessous en un clic.
-            </p>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-amber-50 p-4 rounded-2xl border-2 border-zinc-900">
-                <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
-                    <button id="pickCustomImageBtn" type="button" class="comic-btn bg-amber-300 hover:bg-amber-400 font-bold text-xs sm:text-sm px-4 py-2 rounded-xl cursor-pointer">
-                        📁 Choisir une image
-                    </button>
-                    <span id="draftImageStatus" class="text-xs font-semibold text-zinc-600">Aucune image sélectionnée</span>
-                    <canvas id="draftPreviewCanvas" width="96" height="64" class="ml-auto rounded-lg border-2 border-zinc-800 bg-zinc-100"></canvas>
+            <div class="grid grid-cols-2 gap-3 text-center">
+                <div class="bg-emerald-200 border-2 border-zinc-900 rounded-2xl p-2.5">
+                    <div class="text-[11px] font-black uppercase">Meilleur score</div>
+                    <div id="modalBestScore" class="font-cartoon text-3xl">0</div>
                 </div>
-
-                <div>
-                    <label class="block text-xs font-black uppercase mb-1">Nom de la cible</label>
-                    <input id="customTargetName" type="text" placeholder="Ex: Trottinette rapide" class="w-full border-2 border-zinc-900 rounded-xl px-3 py-1.5 text-sm font-semibold" />
-                </div>
-
-                <div>
-                    <label class="block text-xs font-black uppercase mb-1">Voie de passage</label>
-                    <select id="customTargetLane" class="w-full border-2 border-zinc-900 rounded-xl px-3 py-1.5 text-sm font-semibold bg-white">
-                        <option value="road">🛣️ Route (voitures, camions, trottinettes)</option>
-                        <option value="sidewalk">🚶 Trottoir (piétons, animaux, petits engins)</option>
-                        <option value="sky">☁️ Ciel (drones, oiseaux, objets volants)</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-black uppercase mb-1">Sens d'origine de l'image</label>
-                    <select id="customTargetFacing" class="w-full border-2 border-zinc-900 rounded-xl px-3 py-1.5 text-sm font-semibold bg-white">
-                        <option value="right">Regarde vers la droite ➡️</option>
-                        <option value="left">Regarde vers la gauche ⬅️</option>
-                    </select>
-                </div>
-
-                <div class="grid grid-cols-3 gap-2">
-                    <div>
-                        <label class="block text-[11px] font-black uppercase mb-1">Points</label>
-                        <input id="customTargetPoints" type="number" value="200" min="10" max="5000" step="10" class="w-full border-2 border-zinc-900 rounded-xl px-2 py-1.5 text-sm font-bold" />
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-black uppercase mb-1">Vitesse</label>
-                        <input id="customTargetSpeed" type="number" value="230" min="50" max="700" step="10" class="w-full border-2 border-zinc-900 rounded-xl px-2 py-1.5 text-sm font-bold" />
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-black uppercase mb-1">Taille (px)</label>
-                        <input id="customTargetSize" type="number" value="95" min="40" max="220" step="5" class="w-full border-2 border-zinc-900 rounded-xl px-2 py-1.5 text-sm font-bold" />
-                    </div>
-                </div>
-
-                <div class="sm:col-span-2 flex justify-end">
-                    <button id="addCustomTargetBtn" type="button" class="comic-btn bg-emerald-400 hover:bg-emerald-500 text-zinc-950 font-black text-sm px-5 py-2 rounded-xl cursor-pointer">
-                        + Ajouter à mes cibles
-                    </button>
+                <div class="bg-sky-200 border-2 border-zinc-900 rounded-2xl p-2.5">
+                    <div class="text-[11px] font-black uppercase">Parties jouées</div>
+                    <div id="modalGamesCount" class="font-cartoon text-3xl">0</div>
                 </div>
             </div>
 
-            <div id="customTargetsList" class="space-y-2 max-h-56 overflow-y-auto"></div>
+            <div>
+                <div class="text-xs font-black uppercase text-zinc-700 mb-1.5">Dernières parties enregistrées</div>
+                <div id="scoresModalList" class="space-y-1.5 max-h-64 overflow-y-auto"></div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t-2 border-zinc-200">
+                <button id="clearScoresHistoryBtn" type="button" class="comic-btn bg-rose-200 hover:bg-rose-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
+                    🗑️ Effacer l'historique
+                </button>
+                <button id="closeScoresFooterBtn" type="button" class="comic-btn bg-amber-400 hover:bg-amber-500 text-zinc-950 font-black text-xs px-4 py-1.5 rounded-xl cursor-pointer">
+                    Fermer
+                </button>
+            </div>
         </div>
     </div>
 
@@ -240,6 +182,10 @@
                     <div id="bestScoreDisplay" class="font-cartoon text-4xl">0</div>
                 </div>
             </div>
+            <div class="text-left bg-white border-2 border-zinc-900 rounded-2xl p-3">
+                <div class="text-xs font-black uppercase text-zinc-700 mb-1.5">📜 Scores passés</div>
+                <div id="gameOverScoresList" class="space-y-1 max-h-36 overflow-y-auto text-xs"></div>
+            </div>
             <button id="playAgainBtn" type="button" class="w-full comic-btn bg-amber-400 hover:bg-amber-500 text-zinc-950 font-cartoon text-3xl py-3 rounded-2xl cursor-pointer">
                 ↻ REJOUER UNE PARTIE
             </button>
@@ -250,10 +196,6 @@
         // =========================================================================
         // CONFIGURATION ADMIN PERMANENTE (fichiers placés dans ./assets/ sur GitHub)
         // =========================================================================
-        // IMPORTANT POUR LE SENS :
-        // - facing: 'right' -> l'image d'origine regarde vers la DROITE (➡️)
-        // - facing: 'left'  -> l'image d'origine regarde vers la GAUCHE (⬅️)
-        // Le jeu retourne automatiquement l'image selon qu'elle arrive de gauche ou de droite !
         const ADMIN_ASSETS_CONFIG = {
             streetBg: './assets/images/rue.jpg',
             avatar: './assets/images/Gemini_Generated_Image_xnbtp1xnbtp1xnbt.jpg',
@@ -282,15 +224,9 @@
             ]
         };
 
-        const STORAGE_KEY_BG = 'jh_sherif_bg_v1';
-        const STORAGE_KEY_CYCLIST = 'jh_sherif_cyclist_v1';
-        const STORAGE_KEY_AVATAR = 'jh_sherif_avatar_v1';
-        const STORAGE_KEY_VOICE = 'jh_sherif_voice_v1';
-        const STORAGE_KEY_CUSTOM_TARGETS = 'jh_sherif_custom_targets_v1';
-        const STORAGE_KEY_FACING_OVERRIDES = 'jh_sherif_facing_overrides_v1';
         const STORAGE_KEY_BEST = 'jh_sherif_best_score_v1';
+        const STORAGE_KEY_SCORE_HISTORY = 'jh_sherif_score_history_v1';
 
-        const gameRoot = document.getElementById('gameRoot');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const introScreen = document.getElementById('introScreen');
@@ -298,7 +234,6 @@
         const introAvatarCtx = introAvatarCanvas.getContext('2d');
         const adminAssetDebugInfo = document.getElementById('adminAssetDebugInfo');
         const startAdventureBtn = document.getElementById('startAdventureBtn');
-        const introLoadAvatarBtn = document.getElementById('introLoadAvatarBtn');
         const introMusicBtn = document.getElementById('introMusicBtn');
         const gameOverModal = document.getElementById('gameOverModal');
         const scoreDisplay = document.getElementById('scoreDisplay');
@@ -320,7 +255,6 @@
         let cyclistCustomImg = null;
         let avatarCustomImg = null;
         let customTargets = [];
-        let draftTargetDataUrl = null;
         let toastTimer = null;
         let avatarLoadedStatus = 'recherche...';
         let autoTargetsLoadedCount = 0;
@@ -329,6 +263,7 @@
         let height = 0;
         let score = 0;
         let bestScore = Number(localStorage.getItem(STORAGE_KEY_BEST) || '0') || 0;
+        let scoreHistory = [];
         let timeLeft = 60;
         let grenades = 4;
         const maxGrenades = 4;
@@ -365,21 +300,88 @@
         let rockMusicTimer = null;
         let trafficNoiseGain = null;
 
-        function getFacingOverrides() {
+        function loadScoreHistory() {
             try {
-                const raw = localStorage.getItem(STORAGE_KEY_FACING_OVERRIDES);
-                return raw ? JSON.parse(raw) : {};
+                const raw = localStorage.getItem(STORAGE_KEY_SCORE_HISTORY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                scoreHistory = Array.isArray(parsed) ? parsed : [];
             } catch (err) {
-                return {};
+                scoreHistory = [];
+            }
+            if (scoreHistory.length > 0) {
+                const topFromHistory = Math.max(...scoreHistory.map((item) => Number(item.score) || 0));
+                if (topFromHistory > bestScore) {
+                    bestScore = topFromHistory;
+                }
             }
         }
 
-        function setFacingOverride(targetId, facing) {
+        function saveScoreEntry(finalPts) {
+            const now = new Date();
+            const dateLabel = now.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }) + ' à ' + now.toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            scoreHistory.unshift({
+                id: 'score_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+                score: Number(finalPts) || 0,
+                date: dateLabel
+            });
+
+            if (scoreHistory.length > 50) {
+                scoreHistory = scoreHistory.slice(0, 50);
+            }
+
             try {
-                const overrides = getFacingOverrides();
-                overrides[targetId] = facing;
-                localStorage.setItem(STORAGE_KEY_FACING_OVERRIDES, JSON.stringify(overrides));
+                localStorage.setItem(STORAGE_KEY_SCORE_HISTORY, JSON.stringify(scoreHistory));
             } catch (err) {}
+        }
+
+        function renderScoreHistoryLists() {
+            const topScore = scoreHistory.length > 0
+                ? Math.max(bestScore, ...scoreHistory.map((s) => Number(s.score) || 0))
+                : bestScore;
+
+            const buildHtml = (items, emptyMsg) => {
+                if (!items || items.length === 0) {
+                    return '<div class="text-xs text-zinc-500 italic text-center py-2">' + emptyMsg + '</div>';
+                }
+                return items.map((entry, idx) => {
+                    const isRecord = entry.score === topScore && topScore > 0;
+                    const badge = idx === 0
+                        ? '<span class="text-[10px] font-black bg-amber-300 text-zinc-900 px-1.5 py-0.5 rounded">Dernière</span>'
+                        : '<span class="text-[11px] font-bold text-zinc-400">#' + (idx + 1) + '</span>';
+                    const crown = isRecord ? ' 👑' : '';
+                    return '<div class="flex items-center justify-between gap-2 bg-zinc-50 border border-zinc-200 rounded-xl px-2.5 py-1.5">' +
+                        '<div class="flex items-center gap-2 min-w-0">' +
+                        badge +
+                        '<span class="text-[11px] text-zinc-600 truncate">' + entry.date + '</span>' +
+                        '</div>' +
+                        '<div class="font-cartoon text-lg text-zinc-900 shrink-0">' + entry.score + ' pts' + crown + '</div>' +
+                        '</div>';
+                }).join('');
+            };
+
+            const gameOverListEl = document.getElementById('gameOverScoresList');
+            if (gameOverListEl) {
+                gameOverListEl.innerHTML = buildHtml(scoreHistory.slice(0, 8), 'Aucune partie précédente enregistrée.');
+            }
+
+            const modalListEl = document.getElementById('scoresModalList');
+            if (modalListEl) {
+                modalListEl.innerHTML = buildHtml(scoreHistory, 'Joue une partie pour enregistrer ton premier score !');
+            }
+
+            const modalBestEl = document.getElementById('modalBestScore');
+            if (modalBestEl) modalBestEl.textContent = String(topScore);
+
+            const modalCountEl = document.getElementById('modalGamesCount');
+            if (modalCountEl) modalCountEl.textContent = String(scoreHistory.length);
         }
 
         function refreshAdminDebugStatus() {
@@ -461,7 +463,7 @@
                 const now = ctxAudio.currentTime;
                 const osc = ctxAudio.createOscillator();
                 const osc2 = ctxAudio.createOscillator();
-                const filter = ctxAudio.createBiquadFilter();
+                const filter = audioCtx.createBiquadFilter();
                 const gain = ctxAudio.createGain();
 
                 osc.type = type;
@@ -683,73 +685,7 @@
             ctx.setLineDash([]);
         }
 
-        function applyStreetImage(img, saveToStorage = true) {
-            streetBgImg = img;
-            if (saveToStorage) {
-                try {
-                    const tempCanvas = document.createElement('canvas');
-                    const maxDim = 1280;
-                    let w = img.width;
-                    let h = img.height;
-                    if (w > maxDim || h > maxDim) {
-                        const scale = Math.min(maxDim / w, maxDim / h);
-                        w = Math.round(w * scale);
-                        h = Math.round(h * scale);
-                    }
-                    tempCanvas.width = w;
-                    tempCanvas.height = h;
-                    const tctx = tempCanvas.getContext('2d');
-                    tctx.drawImage(img, 0, 0, w, h);
-                    localStorage.setItem(STORAGE_KEY_BG, tempCanvas.toDataURL('image/jpeg', 0.82));
-                } catch (err) {}
-            }
-        }
-
         function initBackground() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY_BG);
-                if (saved) {
-                    const img = new Image();
-                    img.onload = () => {
-                        if (!streetBgImg) streetBgImg = img;
-                    };
-                    img.src = saved;
-                }
-            } catch (err) {}
-
-            try {
-                const savedCyclist = localStorage.getItem(STORAGE_KEY_CYCLIST);
-                if (savedCyclist) {
-                    const cImg = new Image();
-                    cImg.onload = () => {
-                        if (!cyclistCustomImg) cyclistCustomImg = cImg;
-                    };
-                    cImg.src = savedCyclist;
-                }
-            } catch (err) {}
-
-            try {
-                const savedAvatar = localStorage.getItem(STORAGE_KEY_AVATAR);
-                if (savedAvatar) {
-                    const aImg = new Image();
-                    aImg.onload = () => {
-                        if (!avatarCustomImg) {
-                            avatarCustomImg = aImg;
-                            avatarLoadedStatus = 'local';
-                            refreshAdminDebugStatus();
-                        }
-                    };
-                    aImg.src = savedAvatar;
-                }
-            } catch (err) {}
-
-            try {
-                const savedVoice = localStorage.getItem(STORAGE_KEY_VOICE);
-                if (savedVoice && customVoiceAudio && !customVoiceAudio.src) {
-                    customVoiceAudio.src = savedVoice;
-                }
-            } catch (err) {}
-
             if (ADMIN_ASSETS_CONFIG.streetBg) {
                 const adminBg = new Image();
                 adminBg.onload = () => {
@@ -808,7 +744,48 @@
             refreshAdminDebugStatus();
         }
 
-        function removeConnectedBackground(sourceImg) {
+        function detectNaturalFacingFromCanvas(canvasEl) {
+            try {
+                const w = canvasEl.width;
+                const h = canvasEl.height;
+                if (w < 8 || h < 8) return 'right';
+                const imgData = canvasEl.getContext('2d').getImageData(0, 0, w, h).data;
+
+                const third = Math.max(1, Math.floor(w / 3));
+                let leftTopSum = 0, leftCols = 0;
+                let rightTopSum = 0, rightCols = 0;
+
+                for (let x = 0; x < w; x++) {
+                    let topY = -1;
+                    for (let y = 0; y < h; y++) {
+                        if (imgData[(y * w + x) * 4 + 3] > 40) {
+                            topY = y;
+                            break;
+                        }
+                    }
+                    if (topY !== -1) {
+                        if (x < third) {
+                            leftTopSum += topY;
+                            leftCols++;
+                        } else if (x >= w - third) {
+                            rightTopSum += topY;
+                            rightCols++;
+                        }
+                    }
+                }
+
+                if (leftCols > 0 && rightCols > 0) {
+                    const avgLeftTop = leftTopSum / leftCols;
+                    const avgRightTop = rightTopSum / rightCols;
+                    if (Math.abs(avgLeftTop - avgRightTop) > h * 0.04) {
+                        return avgLeftTop > avgRightTop ? 'left' : 'right';
+                    }
+                }
+            } catch (err) {}
+            return 'right';
+        }
+
+        function processTargetImageCutout(sourceImg) {
             const temp = document.createElement('canvas');
             const maxSide = 260;
             let w = sourceImg.naturalWidth || sourceImg.width || 120;
@@ -823,6 +800,8 @@
             const tctx = temp.getContext('2d');
             tctx.clearRect(0, 0, w, h);
             tctx.drawImage(sourceImg, 0, 0, w, h);
+
+            let detectedFacing = 'right';
 
             try {
                 const imgData = tctx.getImageData(0, 0, w, h);
@@ -852,11 +831,12 @@
                     const bgR = sumR / borderSamples.length;
                     const bgG = sumG / borderSamples.length;
                     const bgB = sumB / borderSamples.length;
+                    const bgIsVeryLight = bgR > 225 && bgG > 225 && bgB > 225;
 
                     const visited = new Uint8Array(w * h);
                     const queue = [];
-                    const tolerance = 58;
-                    const softEdge = 18;
+                    const tolerance = 68;
+                    const softEdge = 24;
 
                     const getColorDist = (idx) => {
                         const p = idx * 4;
@@ -903,7 +883,15 @@
                         if (x < w - 1 && y < h - 1) enqueueIfBg(x + 1, y + 1);
                     }
 
-                    // Adoucit la transition sur les pixels en bordure du sujet
+                    if (bgIsVeryLight) {
+                        for (let i = 0; i < w * h; i++) {
+                            const p = i * 4;
+                            if (data[p + 3] > 0 && data[p] > 238 && data[p + 1] > 238 && data[p + 2] > 238) {
+                                data[p + 3] = 0;
+                            }
+                        }
+                    }
+
                     let minX = w, minY = h, maxX = 0, maxY = 0;
                     let hasOpaque = false;
                     for (let y = 0; y < h; y++) {
@@ -919,7 +907,7 @@
                                 if (touchesTransparent) {
                                     const dist = getColorDist(idx);
                                     if (dist < tolerance + softEdge) {
-                                        const ratio = Math.max(0, (dist - tolerance * 0.75) / (tolerance * 0.25 + softEdge));
+                                        const ratio = Math.max(0, (dist - tolerance * 0.72) / (tolerance * 0.28 + softEdge));
                                         data[p + 3] = Math.round(data[p + 3] * Math.min(1, ratio));
                                     }
                                 }
@@ -936,7 +924,6 @@
 
                     tctx.putImageData(imgData, 0, 0);
 
-                    // Recadre proprement autour du sujet détouré pour éviter les marges vides
                     if (hasOpaque && maxX > minX && maxY > minY) {
                         const pad = 2;
                         const cx = Math.max(0, minX - pad);
@@ -947,177 +934,74 @@
                         cropped.width = cw;
                         cropped.height = ch;
                         cropped.getContext('2d').drawImage(temp, cx, cy, cw, ch, 0, 0, cw, ch);
-                        return cropped.toDataURL('image/png');
+                        detectedFacing = detectNaturalFacingFromCanvas(cropped);
+                        return { dataUrl: cropped.toDataURL('image/png'), detectedFacing };
                     }
                 }
             } catch (err) {}
 
-            return temp.toDataURL('image/png');
-        }
-
-        function saveCustomTargets() {
-            try {
-                const serializable = customTargets
-                    .filter((t) => !String(t.id || '').startsWith('admin_target_'))
-                    .map(({ id, name, label, lane, facing, points, speed, size, dataUrl }) => ({
-                        id,
-                        name,
-                        label,
-                        lane,
-                        facing,
-                        points,
-                        speed,
-                        size,
-                        dataUrl
-                    }));
-                localStorage.setItem(STORAGE_KEY_CUSTOM_TARGETS, JSON.stringify(serializable));
-            } catch (err) {
-                showToast('Stockage plein : cible active pour cette session.');
-            }
-            const badge = document.getElementById('customTargetsCount');
-            if (badge) badge.textContent = String(customTargets.length);
-            renderCustomTargetsList();
+            detectedFacing = detectNaturalFacingFromCanvas(temp);
+            return { dataUrl: temp.toDataURL('image/png'), detectedFacing };
         }
 
         function loadCustomTargets() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_TARGETS);
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    if (Array.isArray(parsed)) {
-                        customTargets = parsed.map((item) => {
-                            const img = new Image();
-                            img.src = item.dataUrl;
-                            return { ...item, img };
-                        });
-                    }
-                }
-            } catch (err) {
-                customTargets = [];
-            }
-
-            const badge = document.getElementById('customTargetsCount');
-            if (badge) badge.textContent = String(customTargets.length);
-            renderCustomTargetsList();
+            customTargets = [];
+            autoTargetsLoadedCount = 0;
             refreshAdminDebugStatus();
 
-            if (Array.isArray(ADMIN_ASSETS_CONFIG.customTargets)) {
-                autoTargetsLoadedCount = 0;
-                const overrides = getFacingOverrides();
-                ADMIN_ASSETS_CONFIG.customTargets.forEach((cfg, idx) => {
-                    if (!cfg || !cfg.src) return;
-                    const targetId = 'admin_target_' + idx;
-                    const labelName = cfg.name || ('Cible ' + (idx + 1));
-                    const effectiveFacing = overrides[targetId] || cfg.facing || 'right';
+            if (!Array.isArray(ADMIN_ASSETS_CONFIG.customTargets)) return;
 
-                    const img = new Image();
-                    img.onload = () => {
-                        let cutoutUrl = '';
-                        try {
-                            cutoutUrl = removeConnectedBackground(img);
-                        } catch (err) {
-                            cutoutUrl = cfg.src;
-                        }
+            ADMIN_ASSETS_CONFIG.customTargets.forEach((cfg, idx) => {
+                if (!cfg || !cfg.src) return;
+                const targetId = 'admin_target_' + idx;
+                const labelName = cfg.name || ('Cible ' + (idx + 1));
 
-                        const applyFinalImage = (finalImg, finalDataUrl) => {
-                            const existsNow = customTargets.some(c => c.id === targetId);
-                            const entry = {
-                                id: targetId,
-                                name: labelName,
-                                label: labelName,
-                                lane: cfg.lane || 'road',
-                                facing: effectiveFacing,
-                                points: Number(cfg.points) || 200,
-                                speed: Number(cfg.speed) || 230,
-                                size: Number(cfg.size) || 95,
-                                src: cfg.src,
-                                dataUrl: finalDataUrl,
-                                img: finalImg
-                            };
-                            if (existsNow) {
-                                customTargets = customTargets.map(c => c.id === targetId ? entry : c);
-                            } else {
-                                customTargets.push(entry);
-                                autoTargetsLoadedCount++;
-                            }
-                            if (badge) badge.textContent = String(customTargets.length);
-                            renderCustomTargetsList();
-                            refreshAdminDebugStatus();
+                const img = new Image();
+                img.onload = () => {
+                    let cutoutUrl = '';
+                    let autoFacing = cfg.facing || 'right';
+                    try {
+                        const processed = processTargetImageCutout(img);
+                        cutoutUrl = processed.dataUrl;
+                        autoFacing = processed.detectedFacing || cfg.facing || 'right';
+                    } catch (err) {
+                        cutoutUrl = cfg.src;
+                        autoFacing = cfg.facing || 'right';
+                    }
+
+                    const applyFinalImage = (finalImg, finalDataUrl) => {
+                        const existsNow = customTargets.some(c => c.id === targetId);
+                        const entry = {
+                            id: targetId,
+                            name: labelName,
+                            label: labelName,
+                            lane: cfg.lane || 'road',
+                            facing: autoFacing,
+                            points: Number(cfg.points) || 200,
+                            speed: Number(cfg.speed) || 230,
+                            size: Number(cfg.size) || 95,
+                            src: cfg.src,
+                            dataUrl: finalDataUrl,
+                            img: finalImg
                         };
-
-                        const cutoutImg = new Image();
-                        cutoutImg.onload = () => applyFinalImage(cutoutImg, cutoutUrl);
-                        cutoutImg.onerror = () => applyFinalImage(img, cfg.src);
-                        cutoutImg.src = cutoutUrl;
-                    };
-                    img.onerror = () => {
+                        if (existsNow) {
+                            customTargets = customTargets.map(c => c.id === targetId ? entry : c);
+                        } else {
+                            customTargets.push(entry);
+                            autoTargetsLoadedCount++;
+                        }
                         refreshAdminDebugStatus();
                     };
-                    img.src = cfg.src;
-                });
-            }
-        }
 
-        function renderCustomTargetsList() {
-            const container = document.getElementById('customTargetsList');
-            if (!container) return;
-            if (customTargets.length === 0) {
-                container.innerHTML = '<div class="text-xs text-zinc-500 italic text-center py-3">Aucune cible personnalisée pour le moment.</div>';
-                return;
-            }
-            container.innerHTML = '';
-            customTargets.forEach((item) => {
-                const row = document.createElement('div');
-                row.className = 'flex items-center justify-between gap-2.5 bg-zinc-50 border-2 border-zinc-200 rounded-xl p-2';
-
-                const thumb = document.createElement('img');
-                thumb.src = item.dataUrl || item.src;
-                thumb.alt = item.name;
-                thumb.className = 'w-12 h-10 object-contain rounded-lg bg-white border border-zinc-300';
-
-                const info = document.createElement('div');
-                info.className = 'flex-1 min-w-0';
-                const laneLabel = item.lane === 'sky' ? 'Ciel' : item.lane === 'sidewalk' ? 'Trottoir' : 'Route';
-                const facingLabel = (item.facing || 'right') === 'left' ? '⬅️ Gauche' : '➡️ Droite';
-                const isAdminItem = String(item.id || '').startsWith('admin_target_');
-                info.innerHTML = `<div class="font-bold text-sm truncate">${item.name}${isAdminItem ? ' <span class="text-[10px] bg-amber-200 text-zinc-900 px-1.5 py-0.5 rounded ml-1">Auto</span>' : ''}</div><div class="text-[11px] text-zinc-500">${laneLabel} • Sens image : <strong>${facingLabel}</strong> • ${item.points} pts</div>`;
-
-                const flipBtn = document.createElement('button');
-                flipBtn.type = 'button';
-                flipBtn.className = 'comic-btn bg-sky-200 hover:bg-sky-300 text-zinc-900 font-black text-xs px-2.5 py-1 rounded-lg cursor-pointer';
-                flipBtn.textContent = '⇄ Sens';
-                flipBtn.title = 'Inverser le sens d’origine (droite / gauche)';
-                flipBtn.addEventListener('click', () => {
-                    const nextFacing = (item.facing || 'right') === 'right' ? 'left' : 'right';
-                    item.facing = nextFacing;
-                    if (String(item.id || '').startsWith('admin_target_')) {
-                        setFacingOverride(item.id, nextFacing);
-                    } else {
-                        saveCustomTargets();
-                    }
-                    targets.forEach((activeTarget) => {
-                        if (activeTarget.type === 'custom' && activeTarget.label === item.name) {
-                            activeTarget.facing = nextFacing;
-                        }
-                    });
-                    renderCustomTargetsList();
-                    showToast('Sens de « ' + item.name + ' » : ' + (nextFacing === 'left' ? '⬅️ Gauche' : '➡️ Droite'));
-                });
-
-                const delBtn = document.createElement('button');
-                delBtn.type = 'button';
-                delBtn.className = 'comic-btn bg-rose-200 hover:bg-rose-300 text-zinc-900 font-black text-xs px-2.5 py-1 rounded-lg cursor-pointer';
-                delBtn.textContent = 'Suppr.';
-                delBtn.addEventListener('click', () => {
-                    customTargets = customTargets.filter((t) => t.id !== item.id);
-                    saveCustomTargets();
-                });
-
-                row.appendChild(thumb);
-                row.appendChild(info);
-                row.appendChild(flipBtn);
-                row.appendChild(delBtn);
-                container.appendChild(row);
+                    const cutoutImg = new Image();
+                    cutoutImg.onload = () => applyFinalImage(cutoutImg, cutoutUrl);
+                    cutoutImg.onerror = () => applyFinalImage(img, cfg.src);
+                    cutoutImg.src = cutoutUrl;
+                };
+                img.onerror = () => {
+                    refreshAdminDebugStatus();
+                };
+                img.src = cfg.src;
             });
         }
 
@@ -1357,7 +1241,10 @@
             spawnTimer = 0.25;
             gameState = 'playing';
             if (introScreen) introScreen.classList.add('hidden');
-            if (gameOverModal) gameOverModal.classList.add('hidden');
+            if (gameOverModal) {
+                gameOverModal.classList.add('hidden');
+                gameOverModal.classList.remove('flex');
+            }
             updateHud();
             updateAmbientTrafficGain();
         }
@@ -1365,6 +1252,7 @@
         function endGame() {
             gameState = 'gameover';
             updateAmbientTrafficGain();
+            saveScoreEntry(score);
             if (score > bestScore) {
                 bestScore = score;
                 try {
@@ -1373,7 +1261,11 @@
             }
             if (finalScoreEl) finalScoreEl.textContent = String(score);
             if (bestScoreDisplay) bestScoreDisplay.textContent = String(bestScore);
-            if (gameOverModal) gameOverModal.classList.remove('hidden');
+            renderScoreHistoryLists();
+            if (gameOverModal) {
+                gameOverModal.classList.remove('hidden');
+                gameOverModal.classList.add('flex');
+            }
         }
 
         function drawAvatarFigure(targetCtx, cx, cy, scale, facingBack, shoutActive, shoutLabel) {
@@ -1478,6 +1370,8 @@
             if (introTurning) {
                 introTurnProgress = Math.min(1, introTurnProgress + dt * 2.4);
                 if (introTurnProgress >= 1) {
+                    introTurning = false;
+                    introTurnProgress = 0;
                     startNewGame();
                     return;
                 }
@@ -1507,7 +1401,6 @@
                     ctx.scale(-1, 1);
                 }
 
-                // Respecte les proportions réelles de l'image détourée
                 const ratio = t.img.naturalWidth / Math.max(1, t.img.naturalHeight);
                 let drawW = t.w;
                 let drawH = t.h;
@@ -1517,15 +1410,16 @@
                     drawW = drawH * ratio;
                 }
 
-                // Ombre réaliste au sol pour ancrer la cible dans le décor
                 if (t.y > height * 0.45) {
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.30)';
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.34)';
                     ctx.beginPath();
-                    ctx.ellipse(0, drawH * 0.46, drawW * 0.42, Math.max(5, drawH * 0.11), 0, 0, Math.PI * 2);
+                    ctx.ellipse(0, drawH * 0.45, drawW * 0.44, Math.max(5, drawH * 0.12), 0, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
+                ctx.filter = 'contrast(1.03) saturate(0.96)';
                 ctx.drawImage(t.img, -drawW / 2, -drawH / 2, drawW, drawH);
+                ctx.filter = 'none';
                 ctx.restore();
                 return;
             }
@@ -1535,8 +1429,17 @@
 
             if (t.isCyclist) {
                 if (cyclistCustomImg && cyclistCustomImg.complete && cyclistCustomImg.naturalWidth > 0) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, t.h * 0.45, t.w * 0.36, 7, 0, 0, Math.PI * 2);
+                    ctx.fill();
                     ctx.drawImage(cyclistCustomImg, -t.w / 2, -t.h / 2, t.w, t.h);
                 } else {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.26)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 32, 26, 6, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
                     ctx.strokeStyle = '#18181b';
                     ctx.lineWidth = 3;
                     ctx.beginPath();
@@ -1553,6 +1456,11 @@
                     ctx.fillRect(-8, -6, 16, 20);
                 }
             } else if (t.type === 'car' || t.type === 'truck') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.30)';
+                ctx.beginPath();
+                ctx.ellipse(0, t.h * 0.52, t.w * 0.46, 9, 0, 0, Math.PI * 2);
+                ctx.fill();
+
                 ctx.fillStyle = t.color || '#ef4444';
                 ctx.strokeStyle = '#18181b';
                 ctx.lineWidth = 3;
@@ -1570,6 +1478,11 @@
                 ctx.arc(t.w * 0.28, t.h / 2, 10, 0, Math.PI * 2);
                 ctx.fill();
             } else if (t.type === 'walker') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.beginPath();
+                ctx.ellipse(0, 20, 14, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
                 ctx.fillStyle = t.shirtColor || '#10b981';
                 ctx.strokeStyle = '#18181b';
                 ctx.lineWidth = 2.5;
@@ -1860,208 +1773,11 @@
             });
         }
 
-        if (introLoadAvatarBtn) {
-            introLoadAvatarBtn.addEventListener('click', () => {
-                const input = document.getElementById('avatarFileInput');
-                if (input) input.click();
-            });
-        }
-
         if (introMusicBtn) {
             introMusicBtn.addEventListener('click', () => {
                 ensureAudio();
                 rockMusicEnabled = !rockMusicEnabled;
                 introMusicBtn.textContent = '🎸 Musique Rock : ' + (rockMusicEnabled ? 'ON' : 'OFF');
-            });
-        }
-
-        const uploadBgBtn = document.getElementById('uploadBgBtn');
-        const bgFileInput = document.getElementById('bgFileInput');
-        if (uploadBgBtn && bgFileInput) {
-            uploadBgBtn.addEventListener('click', () => bgFileInput.click());
-            bgFileInput.addEventListener('change', (e) => {
-                const file = e.target.files && e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        applyStreetImage(img, true);
-                        showToast('Photo de rue chargée !');
-                    };
-                    img.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            });
-        }
-
-        const uploadCyclistBtn = document.getElementById('uploadCyclistBtn');
-        const cyclistFileInput = document.getElementById('cyclistFileInput');
-        if (uploadCyclistBtn && cyclistFileInput) {
-            uploadCyclistBtn.addEventListener('click', () => cyclistFileInput.click());
-            cyclistFileInput.addEventListener('change', (e) => {
-                const file = e.target.files && e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        cyclistCustomImg = img;
-                        try {
-                            localStorage.setItem(STORAGE_KEY_CYCLIST, ev.target.result);
-                        } catch (err) {}
-                        showToast('Image cycliste chargée !');
-                    };
-                    img.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            });
-        }
-
-        const uploadAvatarBtn = document.getElementById('uploadAvatarBtn');
-        const avatarFileInput = document.getElementById('avatarFileInput');
-        if (uploadAvatarBtn && avatarFileInput) {
-            uploadAvatarBtn.addEventListener('click', () => avatarFileInput.click());
-            avatarFileInput.addEventListener('change', (e) => {
-                const file = e.target.files && e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        avatarCustomImg = img;
-                        avatarLoadedStatus = 'manuel';
-                        refreshAdminDebugStatus();
-                        try {
-                            localStorage.setItem(STORAGE_KEY_AVATAR, ev.target.result);
-                        } catch (err) {}
-                        showToast('Image avatar chargée !');
-                    };
-                    img.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            });
-        }
-
-        const uploadVoiceBtn = document.getElementById('uploadVoiceBtn');
-        const voiceFileInput = document.getElementById('voiceFileInput');
-        if (uploadVoiceBtn && voiceFileInput) {
-            uploadVoiceBtn.addEventListener('click', () => voiceFileInput.click());
-            voiceFileInput.addEventListener('change', (e) => {
-                const file = e.target.files && e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    if (customVoiceAudio) {
-                        customVoiceAudio.src = ev.target.result;
-                        try {
-                            localStorage.setItem(STORAGE_KEY_VOICE, ev.target.result);
-                        } catch (err) {}
-                        showToast('Audio voix enregistré !');
-                    }
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            });
-        }
-
-        const customTargetsModal = document.getElementById('customTargetsModal');
-        const openCustomTargetsBtn = document.getElementById('openCustomTargetsBtn');
-        const closeCustomTargetsBtn = document.getElementById('closeCustomTargetsBtn');
-        const pickCustomImageBtn = document.getElementById('pickCustomImageBtn');
-        const customTargetFileInput = document.getElementById('customTargetFileInput');
-        const addCustomTargetBtn = document.getElementById('addCustomTargetBtn');
-        const draftPreviewCanvas = document.getElementById('draftPreviewCanvas');
-        const draftImageStatus = document.getElementById('draftImageStatus');
-
-        if (openCustomTargetsBtn && customTargetsModal) {
-            openCustomTargetsBtn.addEventListener('click', () => {
-                renderCustomTargetsList();
-                customTargetsModal.classList.remove('hidden');
-                customTargetsModal.classList.add('flex');
-            });
-        }
-        if (closeCustomTargetsBtn && customTargetsModal) {
-            closeCustomTargetsBtn.addEventListener('click', () => {
-                customTargetsModal.classList.add('hidden');
-                customTargetsModal.classList.remove('flex');
-            });
-        }
-        if (pickCustomImageBtn && customTargetFileInput) {
-            pickCustomImageBtn.addEventListener('click', () => customTargetFileInput.click());
-            customTargetFileInput.addEventListener('change', (e) => {
-                const file = e.target.files && e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        draftTargetDataUrl = removeConnectedBackground(img);
-                        if (draftImageStatus) draftImageStatus.textContent = file.name;
-                        if (draftPreviewCanvas) {
-                            const pctx = draftPreviewCanvas.getContext('2d');
-                            pctx.clearRect(0, 0, draftPreviewCanvas.width, draftPreviewCanvas.height);
-                            const prevImg = new Image();
-                            prevImg.onload = () => {
-                                pctx.drawImage(prevImg, 0, 0, draftPreviewCanvas.width, draftPreviewCanvas.height);
-                            };
-                            prevImg.src = draftTargetDataUrl;
-                        }
-                    };
-                    img.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            });
-        }
-
-        if (addCustomTargetBtn) {
-            addCustomTargetBtn.addEventListener('click', () => {
-                if (!draftTargetDataUrl) {
-                    showToast('Choisis d’abord une image !');
-                    return;
-                }
-                const nameInput = document.getElementById('customTargetName');
-                const laneSelect = document.getElementById('customTargetLane');
-                const facingSelect = document.getElementById('customTargetFacing');
-                const ptsInput = document.getElementById('customTargetPoints');
-                const spdInput = document.getElementById('customTargetSpeed');
-                const szInput = document.getElementById('customTargetSize');
-
-                const name = (nameInput && nameInput.value.trim()) || ('Cible ' + (customTargets.length + 1));
-                const lane = (laneSelect && laneSelect.value) || 'road';
-                const facing = (facingSelect && facingSelect.value) || 'right';
-                const points = Math.max(10, Number(ptsInput && ptsInput.value) || 200);
-                const speed = Math.max(50, Number(spdInput && spdInput.value) || 230);
-                const size = Math.max(40, Math.min(220, Number(szInput && szInput.value) || 95));
-
-                const img = new Image();
-                img.src = draftTargetDataUrl;
-
-                customTargets.push({
-                    id: 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                    name,
-                    label: name,
-                    lane,
-                    facing,
-                    points,
-                    speed,
-                    size,
-                    dataUrl: draftTargetDataUrl,
-                    img
-                });
-                saveCustomTargets();
-                draftTargetDataUrl = null;
-                if (nameInput) nameInput.value = '';
-                if (draftImageStatus) draftImageStatus.textContent = 'Cible ajoutée !';
-                if (draftPreviewCanvas) {
-                    const pctx = draftPreviewCanvas.getContext('2d');
-                    pctx.clearRect(0, 0, draftPreviewCanvas.width, draftPreviewCanvas.height);
-                }
-                showToast('Cible « ' + name + ' » ajoutée !');
             });
         }
 
@@ -2085,45 +1801,45 @@
             playAgainBtn.addEventListener('click', startNewGame);
         }
 
-        window.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            if (gameRoot) gameRoot.classList.add('drop-active');
-        });
-        window.addEventListener('dragleave', () => {
-            if (gameRoot) gameRoot.classList.remove('drop-active');
-        });
-        window.addEventListener('drop', (e) => {
-            e.preventDefault();
-            if (gameRoot) gameRoot.classList.remove('drop-active');
-            const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-            if (!file) return;
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        applyStreetImage(img, true);
-                        showToast('Image déposée appliquée au décor !');
-                    };
-                    img.src = ev.target.result;
-                };
-                reader.readAsDataURL(file);
-            } else if (file.type.startsWith('audio/')) {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    if (customVoiceAudio) {
-                        customVoiceAudio.src = ev.target.result;
-                        try {
-                            localStorage.setItem(STORAGE_KEY_VOICE, ev.target.result);
-                        } catch (err) {}
-                        showToast('Fichier audio chargé !');
-                    }
-                };
-                reader.readAsDataURL(file);
+        const scoresModal = document.getElementById('scoresModal');
+        const openScoresBtn = document.getElementById('openScoresBtn');
+        const closeScoresBtn = document.getElementById('closeScoresBtn');
+        const closeScoresFooterBtn = document.getElementById('closeScoresFooterBtn');
+        const clearScoresHistoryBtn = document.getElementById('clearScoresHistoryBtn');
+
+        const openScoresModal = () => {
+            renderScoreHistoryLists();
+            if (scoresModal) {
+                scoresModal.classList.remove('hidden');
+                scoresModal.classList.add('flex');
             }
-        });
+        };
+        const closeScoresModal = () => {
+            if (scoresModal) {
+                scoresModal.classList.add('hidden');
+                scoresModal.classList.remove('flex');
+            }
+        };
+
+        if (openScoresBtn) openScoresBtn.addEventListener('click', openScoresModal);
+        if (closeScoresBtn) closeScoresBtn.addEventListener('click', closeScoresModal);
+        if (closeScoresFooterBtn) closeScoresFooterBtn.addEventListener('click', closeScoresModal);
+        if (clearScoresHistoryBtn) {
+            clearScoresHistoryBtn.addEventListener('click', () => {
+                scoreHistory = [];
+                bestScore = 0;
+                try {
+                    localStorage.removeItem(STORAGE_KEY_SCORE_HISTORY);
+                    localStorage.removeItem(STORAGE_KEY_BEST);
+                } catch (err) {}
+                renderScoreHistoryLists();
+                showToast('Historique des scores effacé.');
+            });
+        }
 
         resizeCanvas();
+        loadScoreHistory();
+        renderScoreHistoryLists();
         initBackground();
         loadCustomTargets();
         startRockMusicLoop();
