@@ -59,6 +59,15 @@
             cursor: crosshair;
             touch-action: none;
         }
+        /* Bouton tactile de grenade sur téléphone */
+        #mobileGrenadeBtn {
+            display: none;
+        }
+        @media (pointer: coarse), (max-width: 768px) {
+            body.is-playing #mobileGrenadeBtn {
+                display: flex;
+            }
+        }
         /* Pivotement paysage sur téléphone tenu en portrait */
         body.force-landscape-rotate #gameCanvas {
             position: fixed;
@@ -72,21 +81,37 @@
         /* Mise en page compacte et ergonomique en paysage sur téléphone */
         @media (orientation: landscape) and (max-height: 540px) {
             #hudBar {
-                padding: 6px 10px;
+                top: 4px;
+                left: 8px;
+                right: 8px;
+                padding: 4px 8px;
                 gap: 6px;
+                align-items: center;
+                background: rgba(24, 24, 27, 0.55);
+                backdrop-filter: blur(4px);
+                border-radius: 14px;
             }
             #hudBar .comic-box {
-                padding: 4px 10px;
+                padding: 3px 8px;
                 border-width: 2px;
-                box-shadow: 3px 3px 0px #18181b;
+                box-shadow: 2px 2px 0px #18181b;
+                border-radius: 10px;
             }
             #hudBar .font-cartoon {
-                font-size: 1.25rem;
-                line-height: 1.1;
+                font-size: 1.15rem;
+                line-height: 1.05;
             }
             #hudBar .comic-btn {
-                padding: 5px 9px;
+                padding: 4px 8px;
                 font-size: 0.7rem;
+                border-width: 2px;
+                box-shadow: 2px 2px 0px #18181b;
+            }
+            #mobileGrenadeBtn {
+                bottom: 10px;
+                right: 12px;
+                padding: 8px 14px;
+                font-size: 1.15rem;
             }
             #introScreen {
                 padding: 8px 12px;
@@ -120,8 +145,46 @@
                 top: 3.1rem;
             }
         }
+        /* Repositionnement du HUD en paysage forcé (téléphone tenu en portrait pivoté) */
         body.force-landscape-rotate #hudBar {
-            padding: 6px 10px;
+            position: fixed;
+            top: auto;
+            bottom: 8px;
+            left: 8px;
+            right: auto;
+            width: auto;
+            max-width: calc(100vw - 125px);
+            padding: 6px 8px;
+            gap: 6px;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            background: rgba(24, 24, 27, 0.72);
+            backdrop-filter: blur(4px);
+            border: 2px solid rgba(250, 204, 21, 0.45);
+            border-radius: 14px;
+        }
+        body.force-landscape-rotate #hudBar .comic-box {
+            padding: 3px 8px;
+            border-width: 2px;
+            box-shadow: 2px 2px 0px #18181b;
+            border-radius: 10px;
+        }
+        body.force-landscape-rotate #hudBar .font-cartoon {
+            font-size: 1.15rem;
+            line-height: 1.05;
+        }
+        body.force-landscape-rotate #hudBar .comic-btn {
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            border-width: 2px;
+            box-shadow: 2px 2px 0px #18181b;
+        }
+        body.force-landscape-rotate #mobileGrenadeBtn {
+            bottom: 12px;
+            right: 12px;
+            padding: 10px 14px;
+            font-size: 1.2rem;
         }
         body.force-landscape-rotate #introScreen .wanted-poster {
             max-width: 24rem;
@@ -164,7 +227,7 @@
             </div>
 
             <div class="bg-orange-200 comic-box rounded-xl px-3 sm:px-4 py-1.5">
-                <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Grenades (Clic Droit)</div>
+                <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Grenades</div>
                 <div id="grenadeDisplay" class="font-cartoon text-xl sm:text-2xl text-zinc-900 leading-tight">💣💣💣💣</div>
             </div>
 
@@ -190,6 +253,12 @@
             </button>
         </div>
     </div>
+
+    <!-- Bouton tactile dédié pour lancer une grenade sur téléphone -->
+    <button id="mobileGrenadeBtn" type="button" class="fixed bottom-4 right-4 z-30 comic-btn bg-orange-500 active:bg-orange-600 text-white font-cartoon text-2xl px-4 py-2.5 rounded-2xl items-center gap-1.5 cursor-pointer" aria-label="Lancer une grenade">
+        <span>💣</span>
+        <span>GRENADE</span>
+    </button>
 
     <!-- Bannière spéciale de cri tous les 10 000 points -->
     <div id="shoutBanner" class="pointer-events-none fixed top-20 left-1/2 -translate-x-1/2 z-30 hidden">
@@ -273,11 +342,11 @@
             <div class="grid grid-cols-3 gap-2 text-[11px] sm:text-xs font-extrabold">
                 <div class="bg-amber-100/80 border-2 border-stone-900 rounded-lg p-1.5">
                     <div class="text-base">🔫</div>
-                    <div>Clic : Tirer</div>
+                    <div>Clic / Toucher : Tirer</div>
                 </div>
                 <div class="bg-amber-100/80 border-2 border-stone-900 rounded-lg p-1.5">
                     <div class="text-base">💣</div>
-                    <div>Clic droit : Grenade</div>
+                    <div>Clic droit / Bouton : Grenade</div>
                 </div>
                 <div class="bg-red-100/90 border-2 border-red-800 rounded-lg p-1.5 text-red-950">
                     <div class="text-base">🚴‍♀️</div>
@@ -396,7 +465,7 @@
 
         const INTRO_JOKES = [
             'Ah Que Johnny à Bouleurs ! 🎸',
-            'Attention aux gyrophares, ça coûte -500 ! 🚨',
+            'Attention aux gyrophares, ça coûte -1000 ! 🚨',
             'La cycliste passe : laisse-la tranquille ! 🚴‍♀️',
             '4 grenades dans la besace, clic droit ! 💣',
             'Qui veut faire un tour sur la route ? 😎'
@@ -414,6 +483,7 @@
         const adminAssetDebugInfo = document.getElementById('adminAssetDebugInfo');
         const startAdventureBtn = document.getElementById('startAdventureBtn');
         const introMusicBtn = document.getElementById('introMusicBtn');
+        const mobileGrenadeBtn = document.getElementById('mobileGrenadeBtn');
         const gameOverModal = document.getElementById('gameOverModal');
         const scoreDisplay = document.getElementById('scoreDisplay');
         const grenadeDisplay = document.getElementById('grenadeDisplay');
@@ -489,6 +559,10 @@
         let audioCtx = null;
         let rockMusicTimer = null;
         let trafficNoiseGain = null;
+
+        function syncBodyGameStateClass() {
+            document.body.classList.toggle('is-playing', gameState === 'playing');
+        }
 
         /**
          * Détecte si l'appareil est un téléphone/tablette tactile en portrait
@@ -817,7 +891,7 @@
                 const src = ctxAudio.createBufferSource();
                 src.buffer = noiseBuffer;
 
-                const filter = ctxAudio.createBiquadFilter();
+                const filter = audioCtx.createBiquadFilter();
                 filter.type = 'bandpass';
                 filter.Q.value = 1.6;
                 filter.frequency.setValueAtTime(190, now);
@@ -1190,7 +1264,6 @@
             const dx = (clientX - centerX) / scale;
             const dy = (clientY - centerY) / scale;
 
-            // Rotation inverse de +90deg autour du centre : (x', y') = (dy + width/2, -dx + height/2)
             const gx = dy + width / 2;
             const gy = -dx + height / 2;
             return {
@@ -1433,7 +1506,6 @@
                 let tpl = null;
                 const mimiTpl = targetCatalog.find((item) => /mimicar/i.test(item.name));
 
-                // Fait apparaître MimiCar au maximum une fois toutes les 20 secondes en partie
                 if (!isDemo && mimiTpl && mimiCarCooldownTimer <= 0) {
                     tpl = mimiTpl;
                     mimiCarCooldownTimer = mimiTpl.cooldownSeconds || 20;
@@ -1564,6 +1636,7 @@
 
         function applyTargetHit(target, index, fromGrenade = false) {
             targets.splice(index, 1);
+            const isMimiCar = /mimicar/i.test(target.label || '');
 
             if (target.isCyclist) {
                 combo = 1;
@@ -1597,7 +1670,17 @@
                 comboTimer = 3.2;
                 const pts = target.points * combo;
                 score += pts;
-                if (!fromGrenade) {
+                if (isMimiCar) {
+                    playExplosionSound();
+                    screenShake = Math.max(screenShake, 12);
+                    explosions.push({
+                        x: target.x,
+                        y: target.y,
+                        radius: 16,
+                        maxRadius: 115,
+                        alpha: 1
+                    });
+                } else if (!fromGrenade) {
                     playCarHornSound(target.label);
                 }
                 floatingTexts.push({
@@ -1616,6 +1699,10 @@
         function updateGrenadeDisplay() {
             const icons = '💣'.repeat(Math.max(0, grenades)) || '—';
             if (grenadeDisplay) grenadeDisplay.textContent = icons;
+            if (mobileGrenadeBtn) {
+                mobileGrenadeBtn.disabled = grenades <= 0;
+                mobileGrenadeBtn.classList.toggle('opacity-50', grenades <= 0);
+            }
         }
 
         function updateHud() {
@@ -1657,6 +1744,7 @@
             player.shoutTimer = 0;
             player.shoutText = '';
             gameState = 'playing';
+            syncBodyGameStateClass();
 
             if (introScreen) introScreen.classList.add('hidden');
             if (gameOverModal) {
@@ -1671,6 +1759,7 @@
 
         function endGame() {
             gameState = 'gameover';
+            syncBodyGameStateClass();
             updateAmbientTrafficGain();
 
             if (score > bestScore) {
@@ -2401,6 +2490,17 @@
             e.preventDefault();
         });
 
+        if (mobileGrenadeBtn) {
+            mobileGrenadeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (gameState !== 'playing') return;
+                requestLandscapeLock();
+                const aimX = player.aimX || width * 0.5;
+                const aimY = player.aimY || height * 0.68;
+                throwGrenade(aimX, aimY);
+            });
+        }
+
         if (introAvatarCanvas) {
             introAvatarCanvas.addEventListener('click', triggerIntroJokeReaction);
         }
@@ -2481,6 +2581,7 @@
         }
 
         // Initialisation complète au chargement
+        syncBodyGameStateClass();
         resizeCanvas();
         loadScoreHistory();
         renderScoreHistoryLists();
