@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
     <style>
-        /* Typographie BD et mise en page plein écran */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -60,7 +59,7 @@
     <input type="file" id="customTargetFileInput" accept="image/*" class="hidden" />
     <audio id="customVoiceAudio" preload="auto" class="hidden"></audio>
 
-    <!-- Barre HUD supérieure (Score, Grenades, Chrono, Combo, Actions) -->
+    <!-- Barre HUD supérieure -->
     <div id="hudBar" class="pointer-events-none fixed top-0 left-0 right-0 z-20 p-3 sm:p-4 flex flex-wrap items-start justify-between gap-2">
         <div class="flex flex-wrap items-center gap-2 sm:gap-3">
             <div class="bg-amber-300 comic-box rounded-xl px-3 sm:px-4 py-1.5">
@@ -126,7 +125,7 @@
         </div>
     </div>
 
-    <!-- Écran d'introduction au lancement avec avatar et musique rock'n'roll -->
+    <!-- Écran d'introduction -->
     <div id="introScreen" class="fixed inset-0 z-40 flex items-center justify-center bg-zinc-950/90 backdrop-blur-sm p-4">
         <div class="max-w-xl w-full bg-amber-50 comic-box rounded-3xl p-5 sm:p-7 text-zinc-900 text-center space-y-4">
             <div class="inline-block bg-rose-500 text-white font-cartoon text-lg px-3 py-1 rounded-full border-2 border-zinc-900">
@@ -261,7 +260,6 @@
             ]
         };
 
-        // Clés de stockage local pour persister les médias et préférences
         const STORAGE_KEY_BG = 'jh_sherif_bg_v1';
         const STORAGE_KEY_CYCLIST = 'jh_sherif_cyclist_v1';
         const STORAGE_KEY_AVATAR = 'jh_sherif_avatar_v1';
@@ -269,7 +267,6 @@
         const STORAGE_KEY_CUSTOM_TARGETS = 'jh_sherif_custom_targets_v1';
         const STORAGE_KEY_BEST = 'jh_sherif_best_score_v1';
 
-        // Références DOM principales
         const gameRoot = document.getElementById('gameRoot');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -295,14 +292,13 @@
         const mobileGrenadeBtn = document.getElementById('mobileGrenadeBtn');
         const mobileGrenadeCount = document.getElementById('mobileGrenadeCount');
 
-        // État global du jeu
         let viewWidth = window.innerWidth;
         let viewHeight = window.innerHeight;
         let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
         let introActive = true;
         let isTurningToGame = false;
-        let turnProgress = 0; // 0 = face, 1 = dos avec "Johnny"
+        let turnProgress = 0;
         let rockMusicEnabled = true;
         let rockStepIndex = 0;
         let rockNextNoteTime = 0;
@@ -362,7 +358,6 @@
             aimAngle: 0
         };
 
-        // Catalogue de cibles réalistes par défaut
         const TARGET_TYPES = [
             {
                 id: 'sedan',
@@ -441,7 +436,6 @@
             }
         ];
 
-        // Affiche un message discret en bas de l'écran (jamais alert())
         function showToast(msg, duration = 2600) {
             if (!statusToast || !statusToastText) return;
             statusToastText.textContent = msg;
@@ -452,13 +446,11 @@
             }, duration);
         }
 
-        // Vérifie si une fenêtre modale est ouverte
         function isCustomModalOpen() {
             const modal = document.getElementById('customTargetsModal');
             return Boolean(modal && !modal.classList.contains('hidden'));
         }
 
-        // Initialise le contexte Web Audio et démarre le trafic autoroutier si actif
         function initAudio() {
             try {
                 if (!audioCtx) {
@@ -473,12 +465,9 @@
                 if (audioCtx && !highwayStarted) {
                     startHighwayAmbience();
                 }
-            } catch (err) {
-                // Ignore si l'audio est bloqué par le navigateur
-            }
+            } catch (err) {}
         }
 
-        // Crée une ambiance continue de circulation autoroutière
         function startHighwayAmbience() {
             if (!audioCtx || highwayStarted) return;
             try {
@@ -509,19 +498,15 @@
                 highwayNoiseGain.connect(audioCtx.destination);
                 noiseSource.start();
                 highwayStarted = true;
-            } catch (err) {
-                // Ignore
-            }
+            } catch (err) {}
         }
 
-        // Met à jour le volume de la circulation selon l'état muet et la fin de partie
         function updateHighwayGain() {
             if (!highwayNoiseGain || !audioCtx) return;
             const targetGain = (!isMuted && !isGameOver) ? 0.045 : 0;
             highwayNoiseGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.08);
         }
 
-        // Planificateur de musique Rock'n'Roll sur l'écran d'introduction
         function scheduleRockStep() {
             if (!introActive || !rockMusicEnabled || isMuted || !audioCtx) return;
             try {
@@ -563,9 +548,7 @@
                     rockNextNoteTime += 0.19;
                     rockStepIndex++;
                 }
-            } catch (err) {
-                // Ignore
-            }
+            } catch (err) {}
         }
 
         function startRockMusicLoop() {
@@ -583,7 +566,6 @@
             }
         }
 
-        // Effets sonores synthétiques (tir, impact, grenade, klaxon, cri)
         function playSound(type) {
             if (isMuted) return;
             initAudio();
@@ -687,12 +669,9 @@
                     osc.start(now);
                     osc.stop(now + 0.57);
                 }
-            } catch (err) {
-                // Ignore
-            }
+            } catch (err) {}
         }
 
-        // Sélectionne une voix masculine si disponible
         function pickMaleVoice() {
             if (!('speechSynthesis' in window)) return null;
             const voices = window.speechSynthesis.getVoices() || [];
@@ -705,7 +684,6 @@
             return voices.find(v => /fr/i.test(v.lang)) || voices[0];
         }
 
-        // Déclenche le cri "Fuck Johnny" (fichier audio personnalisé ou voix masculine)
         function triggerJonhyShout() {
             shoutBubbleTimer = 2.6;
             screenShake = 14;
@@ -724,9 +702,7 @@
                     customVoiceAudio.currentTime = 0;
                     customVoiceAudio.play().catch(() => {});
                     return;
-                } catch (err) {
-                    // Repli sur la synthèse vocale
-                }
+                } catch (err) {}
             }
 
             try {
@@ -741,12 +717,9 @@
                     if (maleVoice) utter.voice = maleVoice;
                     window.speechSynthesis.speak(utter);
                 }
-            } catch (err) {
-                // Ignore
-            }
+            } catch (err) {}
         }
 
-        // Cri de douleur de la cycliste lorsqu'elle est touchée
         function triggerCyclistPainCry() {
             playSound('scream');
             screenShake = 11;
@@ -758,12 +731,9 @@
                     utter.rate = 1.15;
                     window.speechSynthesis.speak(utter);
                 }
-            } catch (err) {
-                // Ignore
-            }
+            } catch (err) {}
         }
 
-        // Ajoute des points et vérifie le palier des 10000 points
         function addScore(points, x, y, customLabel = null) {
             if (isGameOver) return;
             const gained = points * (points > 0 ? combo : 1);
@@ -790,7 +760,6 @@
             }
         }
 
-        // Redimensionne le canvas principal et recalcule les positions des éléments du décor
         function resizeCanvas() {
             viewWidth = window.innerWidth;
             viewHeight = window.innerHeight;
@@ -807,7 +776,6 @@
             trashBin.y = Math.max(230, Math.min(viewHeight * 0.68, viewHeight - 150));
         }
 
-        // Sauvegarde et applique une image de fond de rue
         function optimizeAndSaveBackground(dataUrl) {
             const img = new Image();
             img.onload = () => {
@@ -829,9 +797,7 @@
                     const compressed = off.toDataURL('image/jpeg', 0.82);
                     localStorage.setItem(STORAGE_KEY_BG, compressed);
                     const savedImg = new Image();
-                    savedImg.onload = () => {
-                        streetBgImg = savedImg;
-                    };
+                    savedImg.onload = () => { streetBgImg = savedImg; };
                     savedImg.src = compressed;
                 } catch (err) {
                     streetBgImg = img;
@@ -840,7 +806,6 @@
             img.src = dataUrl;
         }
 
-        // Sauvegarde et applique la photo de la cycliste
         function optimizeAndSaveCyclist(dataUrl) {
             const img = new Image();
             img.onload = () => {
@@ -862,7 +827,6 @@
             img.src = dataUrl;
         }
 
-        // Sauvegarde et applique l'image de l'avatar
         function optimizeAndSaveAvatar(dataUrl) {
             const img = new Image();
             img.onload = () => {
@@ -884,59 +848,85 @@
             img.src = dataUrl;
         }
 
-        // Charge une image optionnelle depuis le dossier ./assets/ sans bloquer si absente
-        function tryLoadAdminAssetImage(url, onReady) {
-            if (!url) return;
+        function tryLoadAdminAssetImage(url, onReady, onFail) {
+            if (!url) {
+                if (onFail) onFail();
+                return;
+            }
             const img = new Image();
             img.onload = () => onReady(img);
-            img.onerror = () => {};
+            img.onerror = () => {
+                if (onFail) onFail();
+            };
             img.src = url;
         }
 
-        // Charge les médias sauvegardés ou configurés dans ./assets/ au démarrage
         function initBackground() {
             const savedBg = localStorage.getItem(STORAGE_KEY_BG);
-            if (savedBg) {
+            if (ADMIN_ASSETS_CONFIG.streetBg) {
+                tryLoadAdminAssetImage(
+                    ADMIN_ASSETS_CONFIG.streetBg,
+                    (img) => { streetBgImg = img; },
+                    () => {
+                        if (savedBg && !streetBgImg) {
+                            const img = new Image();
+                            img.onload = () => { streetBgImg = img; };
+                            img.src = savedBg;
+                        }
+                    }
+                );
+            } else if (savedBg) {
                 const img = new Image();
                 img.onload = () => { streetBgImg = img; };
                 img.src = savedBg;
-            } else if (ADMIN_ASSETS_CONFIG.streetBg) {
-                tryLoadAdminAssetImage(ADMIN_ASSETS_CONFIG.streetBg, (img) => {
-                    if (!streetBgImg) streetBgImg = img;
-                });
             }
 
             const savedCyclist = localStorage.getItem(STORAGE_KEY_CYCLIST);
-            if (savedCyclist) {
+            if (ADMIN_ASSETS_CONFIG.cyclist) {
+                tryLoadAdminAssetImage(
+                    ADMIN_ASSETS_CONFIG.cyclist,
+                    (img) => { cyclistImg = img; },
+                    () => {
+                        if (savedCyclist && !cyclistImg) {
+                            const img = new Image();
+                            img.onload = () => { cyclistImg = img; };
+                            img.src = savedCyclist;
+                        }
+                    }
+                );
+            } else if (savedCyclist) {
                 const img = new Image();
                 img.onload = () => { cyclistImg = img; };
                 img.src = savedCyclist;
-            } else if (ADMIN_ASSETS_CONFIG.cyclist) {
-                tryLoadAdminAssetImage(ADMIN_ASSETS_CONFIG.cyclist, (img) => {
-                    if (!cyclistImg) cyclistImg = img;
-                });
             }
 
             const savedAvatar = localStorage.getItem(STORAGE_KEY_AVATAR);
-            if (savedAvatar) {
+            if (ADMIN_ASSETS_CONFIG.avatar) {
+                tryLoadAdminAssetImage(
+                    ADMIN_ASSETS_CONFIG.avatar,
+                    (img) => { avatarImg = img; },
+                    () => {
+                        if (savedAvatar && !avatarImg) {
+                            const img = new Image();
+                            img.onload = () => { avatarImg = img; };
+                            img.src = savedAvatar;
+                        }
+                    }
+                );
+            } else if (savedAvatar) {
                 const img = new Image();
                 img.onload = () => { avatarImg = img; };
                 img.src = savedAvatar;
-            } else if (ADMIN_ASSETS_CONFIG.avatar) {
-                tryLoadAdminAssetImage(ADMIN_ASSETS_CONFIG.avatar, (img) => {
-                    if (!avatarImg) avatarImg = img;
-                });
             }
 
             const savedVoice = localStorage.getItem(STORAGE_KEY_VOICE);
-            if (savedVoice && customVoiceAudio) {
-                customVoiceAudio.src = savedVoice;
-            } else if (ADMIN_ASSETS_CONFIG.voiceAudio && customVoiceAudio) {
+            if (ADMIN_ASSETS_CONFIG.voiceAudio && customVoiceAudio) {
                 customVoiceAudio.src = ADMIN_ASSETS_CONFIG.voiceAudio;
+            } else if (savedVoice && customVoiceAudio) {
+                customVoiceAudio.src = savedVoice;
             }
         }
 
-        // Détoure le fond uni/clair connecté aux bords d'une image personnalisée
         function removeConnectedBackground(img) {
             const w = Math.min(260, img.width || 160);
             const h = Math.min(220, img.height || 120);
@@ -1137,7 +1127,6 @@
             img.src = dataUrl;
         }
 
-        // Fait apparaître une cible (personnalisée ou réaliste par défaut)
         function spawnTarget() {
             const fromLeft = Math.random() < 0.5;
             const useCustom = customTargets.length > 0 && Math.random() < 0.45;
@@ -1199,7 +1188,6 @@
             });
         }
 
-        // Fait passer la cycliste toutes les 60 secondes
         function spawnCyclist() {
             const fromLeft = Math.random() < 0.5;
             targets.push({
@@ -1224,7 +1212,6 @@
             showToast('🚴 Attention ! Une cycliste passe sur la route (-1000 pts si touchée) !', 3000);
         }
 
-        // Lance une grenade vers la position cliquée (max 4 par partie)
         function launchGrenade(targetX, targetY) {
             if (grenadesLeft <= 0 || isGameOver) return;
             grenadesLeft--;
@@ -1250,7 +1237,6 @@
             });
         }
 
-        // Déclenche l'explosion d'une grenade dans un rayon donné
         function detonateGrenade(gx, gy) {
             playSound('explosion');
             screenShake = 15;
@@ -1294,7 +1280,6 @@
             }
         }
 
-        // Dessine l'avatar sur l'écran d'introduction ou pendant la rotation
         function drawAvatarPortrait(targetCtx, w, h, backTurnRatio = 0) {
             targetCtx.clearRect(0, 0, w, h);
             const scaleX = Math.max(0.08, Math.abs(Math.cos(backTurnRatio * Math.PI)));
@@ -1390,7 +1375,6 @@
             targetCtx.restore();
         }
 
-        // Dessine l'image de rue en plein écran (ou le décor de rue par défaut) et l'ambiance sombre
         function drawBackground() {
             if (streetBgImg) {
                 const imgRatio = streetBgImg.width / streetBgImg.height;
@@ -1452,7 +1436,6 @@
                 ctx.setLineDash([]);
             }
 
-            // Ambiance sombre et malsaine (vignettage rouge sombre et brume)
             const vig = ctx.createRadialGradient(
                 viewWidth * 0.5,
                 viewHeight * 0.5,
@@ -1468,7 +1451,6 @@
             ctx.fillRect(0, 0, viewWidth, viewHeight);
         }
 
-        // Dessine l'avatar tireur de dos au centre-bas de l'écran avec "Johnny" inscrit dans le dos
         function drawCenterBackAvatar() {
             const size = Math.max(128, Math.min(196, Math.min(viewWidth, viewHeight) * 0.26));
             const cx = viewWidth * 0.5;
@@ -1557,7 +1539,6 @@
             ctx.restore();
         }
 
-        // Dessine une roue détaillée réaliste
         function drawRealisticWheel(cx, cy, radius, angle) {
             ctx.save();
             ctx.translate(cx, cy);
@@ -1584,7 +1565,6 @@
             ctx.restore();
         }
 
-        // Dessine la bulle de cri "Fuck Johnny" au-dessus du tireur
         function drawJH() {
             if (shoutBubbleTimer <= 0) return;
             ctx.save();
@@ -1607,7 +1587,6 @@
             ctx.restore();
         }
 
-        // Dessine la cycliste (photo réelle si chargée, sinon portrait très reconnaissable)
         function drawCyclistTarget(t) {
             ctx.save();
             ctx.translate(t.x, t.y);
@@ -1679,7 +1658,6 @@
             ctx.restore();
         }
 
-        // Dessine une cible réaliste ou personnalisée
         function drawTarget(t) {
             if (t.isCyclist) {
                 drawCyclistTarget(t);
@@ -1846,7 +1824,6 @@
             ctx.restore();
         }
 
-        // Dessine les grenades en vol, particules et textes flottants
         function drawEffects() {
             grenades.forEach((g) => {
                 const p = Math.min(1, g.elapsed / g.duration);
@@ -1906,7 +1883,6 @@
             });
         }
 
-        // Dessine le viseur du joueur
         function drawCrosshair() {
             if (introActive || isTurningToGame || isGameOver) return;
             ctx.save();
@@ -1939,7 +1915,6 @@
             ctx.restore();
         }
 
-        // Termine la partie et affiche le bilan
         function finishGame() {
             if (isGameOver) return;
             isGameOver = true;
@@ -1950,7 +1925,6 @@
             gameOverModal.classList.add('flex');
         }
 
-        // Réinitialise une partie complète
         function resetGame() {
             score = 0;
             nextShoutMilestone = 10000;
@@ -1981,26 +1955,15 @@
             updateHighwayGain();
         }
 
-        // Boucle principale d'animation et de logique
         function updateAndRender(now) {
             const dt = Math.min(0.05, Math.max(0.001, (now - lastTimestamp) / 1000));
             lastTimestamp = now;
 
-            if (screenShake > 0) {
-                screenShake = Math.max(0, screenShake - dt * 36);
-            }
-            if (shoutBubbleTimer > 0) {
-                shoutBubbleTimer = Math.max(0, shoutBubbleTimer - dt);
-            }
-            if (pointer.recoil > 0) {
-                pointer.recoil = Math.max(0, pointer.recoil - dt * 7);
-            }
-            if (pointer.muzzleFlash > 0) {
-                pointer.muzzleFlash = Math.max(0, pointer.muzzleFlash - dt * 11);
-            }
-            if (trashBin.shake > 0) {
-                trashBin.shake = Math.max(0, trashBin.shake - dt);
-            }
+            if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 36);
+            if (shoutBubbleTimer > 0) shoutBubbleTimer = Math.max(0, shoutBubbleTimer - dt);
+            if (pointer.recoil > 0) pointer.recoil = Math.max(0, pointer.recoil - dt * 7);
+            if (pointer.muzzleFlash > 0) pointer.muzzleFlash = Math.max(0, pointer.muzzleFlash - dt * 11);
+            if (trashBin.shake > 0) trashBin.shake = Math.max(0, trashBin.shake - dt);
 
             if (introActive) {
                 drawAvatarPortrait(introAvatarCtx, introAvatarCanvas.width, introAvatarCanvas.height, 0);
@@ -2122,7 +2085,6 @@
             requestAnimationFrame(updateAndRender);
         }
 
-        // Événements d'entrée (clic gauche = tir uniquement, clic droit = grenade uniquement)
         canvas.addEventListener('pointermove', (e) => {
             const rect = canvas.getBoundingClientRect();
             pointer.x = e.clientX - rect.left;
@@ -2212,7 +2174,6 @@
             e.preventDefault();
         });
 
-        // Bouton tactile dédié aux grenades sur téléphone / tablette
         if (mobileGrenadeBtn) {
             mobileGrenadeBtn.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
@@ -2225,7 +2186,6 @@
             });
         }
 
-        // Boutons de l'écran d'introduction
         introMusicBtn.addEventListener('click', () => {
             initAudio();
             rockMusicEnabled = !rockMusicEnabled;
@@ -2249,7 +2209,6 @@
             introScreen.classList.add('hidden');
         });
 
-        // Boutons de la barre supérieure
         document.getElementById('uploadBgBtn').addEventListener('click', () => {
             document.getElementById('bgFileInput').click();
         });
@@ -2304,9 +2263,7 @@
                 if (customVoiceAudio) customVoiceAudio.src = dataUrl;
                 try {
                     localStorage.setItem(STORAGE_KEY_VOICE, dataUrl);
-                } catch (err) {
-                    // Ignore si le fichier dépasse le quota localStorage
-                }
+                } catch (err) {}
                 showToast(`Fichier audio "${file.name}" activé pour la voix !`);
             };
             reader.readAsDataURL(file);
@@ -2329,7 +2286,6 @@
             spawnTarget();
         });
 
-        // Modale des cibles personnalisées
         const customModal = document.getElementById('customTargetsModal');
         document.getElementById('openCustomTargetsBtn').addEventListener('click', () => {
             customModal.classList.remove('hidden');
@@ -2388,7 +2344,6 @@
             showToast(`"${name}" ajoutée au jeu !`);
         });
 
-        // Glisser-déposer d'une image de rue directement sur le jeu
         gameRoot.addEventListener('dragover', (e) => {
             e.preventDefault();
             gameRoot.classList.add('drop-active');
@@ -2409,7 +2364,6 @@
             reader.readAsDataURL(file);
         });
 
-        // Collage d'image via Ctrl+V
         window.addEventListener('paste', (e) => {
             const items = e.clipboardData && e.clipboardData.items;
             if (!items) return;
@@ -2433,7 +2387,6 @@
             window.speechSynthesis.getVoices();
         }
 
-        // Démarrage propre
         resizeCanvas();
         initBackground();
         loadCustomTargets();
