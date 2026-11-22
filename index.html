@@ -140,6 +140,7 @@
 
             <div class="flex flex-col items-center justify-center">
                 <canvas id="introAvatarCanvas" width="240" height="240" class="w-44 h-44 sm:w-56 sm:h-56 rounded-2xl border-4 border-zinc-900 bg-zinc-800 shadow-lg"></canvas>
+                <div id="adminAssetDebugInfo" class="mt-1.5 text-[11px] font-semibold text-zinc-600"></div>
                 <div class="mt-2 flex flex-wrap justify-center gap-2">
                     <button id="introLoadAvatarBtn" type="button" class="comic-btn bg-lime-200 hover:bg-lime-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
                         🖼️ Charger l'image avatar
@@ -151,7 +152,7 @@
             </div>
 
             <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-emerald-400 hover:bg-emerald-500 text-zinc-950 font-cartoon text-3xl sm:text-4xl py-3 rounded-2xl cursor-pointer">
-                ▶ SE RETOURNER & ENTRER DANS LE JEU
+                ▶ BIENVENUE À BOULEURS
             </button>
         </div>
     </div>
@@ -165,7 +166,7 @@
             </div>
 
             <p class="text-xs sm:text-sm text-zinc-600">
-                Ajoute tes propres voitures, trottinettes, motos ou animaux. Le fond uni connecté aux bords est automatiquement détouré et le sens s'adapte selon le côté d'arrivée.
+                Ajoute tes propres véhicules ou animaux et indique dans quel sens regarde l'image d'origine (<strong>➡️ Droite</strong> ou <strong>⬅️ Gauche</strong>) pour qu'elle avance toujours vers l'avant ! Tu peux aussi inverser le sens de n'importe quelle cible ci-dessous en un clic.
             </p>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-amber-50 p-4 rounded-2xl border-2 border-zinc-900">
@@ -192,7 +193,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-black uppercase mb-1">Orientation d'origine de l'image</label>
+                    <label class="block text-xs font-black uppercase mb-1">Sens d'origine de l'image</label>
                     <select id="customTargetFacing" class="w-full border-2 border-zinc-900 rounded-xl px-3 py-1.5 text-sm font-semibold bg-white">
                         <option value="right">Regarde vers la droite ➡️</option>
                         <option value="left">Regarde vers la gauche ⬅️</option>
@@ -221,7 +222,7 @@
                 </div>
             </div>
 
-            <div id="customTargetsList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+            <div id="customTargetsList" class="space-y-2 max-h-56 overflow-y-auto"></div>
         </div>
     </div>
 
@@ -249,9 +250,14 @@
         // =========================================================================
         // CONFIGURATION ADMIN PERMANENTE (fichiers placés dans ./assets/ sur GitHub)
         // =========================================================================
+        // IMPORTANT POUR LE SENS :
+        // - facing: 'right' -> l'image d'origine regarde vers la DROITE (➡️)
+        // - facing: 'left'  -> l'image d'origine regarde vers la GAUCHE (⬅️)
+        // Le jeu retourne automatiquement l'image selon qu'elle arrive de gauche ou de droite !
         const ADMIN_ASSETS_CONFIG = {
             streetBg: './assets/images/rue.jpg',
-            avatar: './assets/images/JH.jpg',
+            avatar: './assets/images/Gemini_Generated_Image_xnbtp1xnbtp1xnbt.jpg',
+            avatarFallback: './assets/images/JH.jpg',
             cyclist: './assets/images/cycliste.png',
             voiceAudio: './assets/audio/audio-jony.mp4',
             customTargets: [
@@ -266,7 +272,9 @@
                 { name: 'Voiture 4', src: './assets/images/voiture4.jpg', lane: 'road', facing: 'right', points: 210, speed: 250, size: 100 },
                 { name: 'Voiture 5', src: './assets/images/voiture5.jpg', lane: 'road', facing: 'right', points: 220, speed: 265, size: 100 },
                 { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'right', points: 220, speed: 275, size: 100 },
-                { name: 'Poubelles', src: './assets/images/poubelles.jpg', lane: 'sidewalk', facing: 'right', points: 150, speed: 130, size: 80 },
+                { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 110 },
+                { name: 'MimiCar', src: './assets/images/mimiCar.jpg', lane: 'road', facing: 'right', points: 230, speed: 240, size: 95 },
+                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'sidewalk', facing: 'right', points: 150, speed: 130, size: 80 },
                 { name: 'Chat', src: './assets/images/chat.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 190, size: 70 },
                 { name: 'Chien', src: './assets/images/chien.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 205, size: 75 },
                 { name: 'Rat', src: './assets/images/rat.jpg', lane: 'sidewalk', facing: 'right', points: 220, speed: 235, size: 65 },
@@ -279,6 +287,7 @@
         const STORAGE_KEY_AVATAR = 'jh_sherif_avatar_v1';
         const STORAGE_KEY_VOICE = 'jh_sherif_voice_v1';
         const STORAGE_KEY_CUSTOM_TARGETS = 'jh_sherif_custom_targets_v1';
+        const STORAGE_KEY_FACING_OVERRIDES = 'jh_sherif_facing_overrides_v1';
         const STORAGE_KEY_BEST = 'jh_sherif_best_score_v1';
 
         const gameRoot = document.getElementById('gameRoot');
@@ -287,6 +296,7 @@
         const introScreen = document.getElementById('introScreen');
         const introAvatarCanvas = document.getElementById('introAvatarCanvas');
         const introAvatarCtx = introAvatarCanvas.getContext('2d');
+        const adminAssetDebugInfo = document.getElementById('adminAssetDebugInfo');
         const startAdventureBtn = document.getElementById('startAdventureBtn');
         const introLoadAvatarBtn = document.getElementById('introLoadAvatarBtn');
         const introMusicBtn = document.getElementById('introMusicBtn');
@@ -312,6 +322,8 @@
         let customTargets = [];
         let draftTargetDataUrl = null;
         let toastTimer = null;
+        let avatarLoadedStatus = 'recherche...';
+        let autoTargetsLoadedCount = 0;
 
         let width = 0;
         let height = 0;
@@ -352,6 +364,33 @@
         let audioCtx = null;
         let rockMusicTimer = null;
         let trafficNoiseGain = null;
+
+        function getFacingOverrides() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY_FACING_OVERRIDES);
+                return raw ? JSON.parse(raw) : {};
+            } catch (err) {
+                return {};
+            }
+        }
+
+        function setFacingOverride(targetId, facing) {
+            try {
+                const overrides = getFacingOverrides();
+                overrides[targetId] = facing;
+                localStorage.setItem(STORAGE_KEY_FACING_OVERRIDES, JSON.stringify(overrides));
+            } catch (err) {}
+        }
+
+        function refreshAdminDebugStatus() {
+            if (!adminAssetDebugInfo) return;
+            const totalConfigured = Array.isArray(ADMIN_ASSETS_CONFIG.customTargets)
+                ? ADMIN_ASSETS_CONFIG.customTargets.length
+                : 0;
+            adminAssetDebugInfo.textContent =
+                'Avatar : ' + avatarLoadedStatus +
+                ' • Cibles auto : ' + autoTargetsLoadedCount + '/' + totalConfigured;
+        }
 
         function showToast(msg, duration = 2600) {
             if (!statusToast || !statusToastText) return;
@@ -694,7 +733,11 @@
                 if (savedAvatar) {
                     const aImg = new Image();
                     aImg.onload = () => {
-                        if (!avatarCustomImg) avatarCustomImg = aImg;
+                        if (!avatarCustomImg) {
+                            avatarCustomImg = aImg;
+                            avatarLoadedStatus = 'local';
+                            refreshAdminDebugStatus();
+                        }
                     };
                     aImg.src = savedAvatar;
                 }
@@ -719,8 +762,35 @@
                 const adminAv = new Image();
                 adminAv.onload = () => {
                     avatarCustomImg = adminAv;
+                    avatarLoadedStatus = 'OK (' + ADMIN_ASSETS_CONFIG.avatar.split('/').pop() + ')';
+                    refreshAdminDebugStatus();
+                };
+                adminAv.onerror = () => {
+                    if (ADMIN_ASSETS_CONFIG.avatarFallback) {
+                        const fallbackAv = new Image();
+                        fallbackAv.onload = () => {
+                            avatarCustomImg = fallbackAv;
+                            avatarLoadedStatus = 'OK (' + ADMIN_ASSETS_CONFIG.avatarFallback.split('/').pop() + ')';
+                            refreshAdminDebugStatus();
+                        };
+                        fallbackAv.onerror = () => {
+                            if (!avatarCustomImg) {
+                                avatarLoadedStatus = 'introuvable';
+                            }
+                            refreshAdminDebugStatus();
+                        };
+                        fallbackAv.src = ADMIN_ASSETS_CONFIG.avatarFallback;
+                    } else {
+                        if (!avatarCustomImg) {
+                            avatarLoadedStatus = 'introuvable (' + ADMIN_ASSETS_CONFIG.avatar + ')';
+                        }
+                        refreshAdminDebugStatus();
+                    }
                 };
                 adminAv.src = ADMIN_ASSETS_CONFIG.avatar;
+            } else {
+                avatarLoadedStatus = 'non configuré';
+                refreshAdminDebugStatus();
             }
 
             if (ADMIN_ASSETS_CONFIG.cyclist) {
@@ -734,6 +804,8 @@
             if (ADMIN_ASSETS_CONFIG.voiceAudio && customVoiceAudio) {
                 customVoiceAudio.src = ADMIN_ASSETS_CONFIG.voiceAudio;
             }
+
+            refreshAdminDebugStatus();
         }
 
         function removeConnectedBackground(sourceImg) {
@@ -783,15 +855,16 @@
 
                     const visited = new Uint8Array(w * h);
                     const queue = [];
-                    const tolerance = 42;
+                    const tolerance = 58;
+                    const softEdge = 18;
 
-                    const isSimilarToBg = (idx) => {
+                    const getColorDist = (idx) => {
                         const p = idx * 4;
-                        if (data[p + 3] === 0) return true;
+                        if (data[p + 3] === 0) return 0;
                         const dr = data[p] - bgR;
                         const dg = data[p + 1] - bgG;
                         const db = data[p + 2] - bgB;
-                        return Math.sqrt(dr * dr + dg * dg + db * db) <= tolerance;
+                        return Math.sqrt(dr * dr + dg * dg + db * db);
                     };
 
                     const enqueueIfBg = (x, y) => {
@@ -799,7 +872,7 @@
                         const idx = y * w + x;
                         if (visited[idx]) return;
                         visited[idx] = 1;
-                        if (isSimilarToBg(idx)) {
+                        if (getColorDist(idx) <= tolerance) {
                             queue.push(idx);
                         }
                     };
@@ -824,9 +897,58 @@
                         if (x < w - 1) enqueueIfBg(x + 1, y);
                         if (y > 0) enqueueIfBg(x, y - 1);
                         if (y < h - 1) enqueueIfBg(x, y + 1);
+                        if (x > 0 && y > 0) enqueueIfBg(x - 1, y - 1);
+                        if (x < w - 1 && y > 0) enqueueIfBg(x + 1, y - 1);
+                        if (x > 0 && y < h - 1) enqueueIfBg(x - 1, y + 1);
+                        if (x < w - 1 && y < h - 1) enqueueIfBg(x + 1, y + 1);
+                    }
+
+                    // Adoucit la transition sur les pixels en bordure du sujet
+                    let minX = w, minY = h, maxX = 0, maxY = 0;
+                    let hasOpaque = false;
+                    for (let y = 0; y < h; y++) {
+                        for (let x = 0; x < w; x++) {
+                            const idx = y * w + x;
+                            const p = idx * 4;
+                            if (data[p + 3] > 0) {
+                                const touchesTransparent =
+                                    (x > 0 && data[(idx - 1) * 4 + 3] === 0) ||
+                                    (x < w - 1 && data[(idx + 1) * 4 + 3] === 0) ||
+                                    (y > 0 && data[(idx - w) * 4 + 3] === 0) ||
+                                    (y < h - 1 && data[(idx + w) * 4 + 3] === 0);
+                                if (touchesTransparent) {
+                                    const dist = getColorDist(idx);
+                                    if (dist < tolerance + softEdge) {
+                                        const ratio = Math.max(0, (dist - tolerance * 0.75) / (tolerance * 0.25 + softEdge));
+                                        data[p + 3] = Math.round(data[p + 3] * Math.min(1, ratio));
+                                    }
+                                }
+                                if (data[p + 3] > 18) {
+                                    hasOpaque = true;
+                                    if (x < minX) minX = x;
+                                    if (y < minY) minY = y;
+                                    if (x > maxX) maxX = x;
+                                    if (y > maxY) maxY = y;
+                                }
+                            }
+                        }
                     }
 
                     tctx.putImageData(imgData, 0, 0);
+
+                    // Recadre proprement autour du sujet détouré pour éviter les marges vides
+                    if (hasOpaque && maxX > minX && maxY > minY) {
+                        const pad = 2;
+                        const cx = Math.max(0, minX - pad);
+                        const cy = Math.max(0, minY - pad);
+                        const cw = Math.min(w - cx, (maxX - minX + 1) + pad * 2);
+                        const ch = Math.min(h - cy, (maxY - minY + 1) + pad * 2);
+                        const cropped = document.createElement('canvas');
+                        cropped.width = cw;
+                        cropped.height = ch;
+                        cropped.getContext('2d').drawImage(temp, cx, cy, cw, ch, 0, 0, cw, ch);
+                        return cropped.toDataURL('image/png');
+                    }
                 }
             } catch (err) {}
 
@@ -877,12 +999,16 @@
             const badge = document.getElementById('customTargetsCount');
             if (badge) badge.textContent = String(customTargets.length);
             renderCustomTargetsList();
+            refreshAdminDebugStatus();
 
             if (Array.isArray(ADMIN_ASSETS_CONFIG.customTargets)) {
+                autoTargetsLoadedCount = 0;
+                const overrides = getFacingOverrides();
                 ADMIN_ASSETS_CONFIG.customTargets.forEach((cfg, idx) => {
                     if (!cfg || !cfg.src) return;
                     const targetId = 'admin_target_' + idx;
                     const labelName = cfg.name || ('Cible ' + (idx + 1));
+                    const effectiveFacing = overrides[targetId] || cfg.facing || 'right';
 
                     const img = new Image();
                     img.onload = () => {
@@ -900,7 +1026,7 @@
                                 name: labelName,
                                 label: labelName,
                                 lane: cfg.lane || 'road',
-                                facing: cfg.facing || 'right',
+                                facing: effectiveFacing,
                                 points: Number(cfg.points) || 200,
                                 speed: Number(cfg.speed) || 230,
                                 size: Number(cfg.size) || 95,
@@ -912,9 +1038,11 @@
                                 customTargets = customTargets.map(c => c.id === targetId ? entry : c);
                             } else {
                                 customTargets.push(entry);
+                                autoTargetsLoadedCount++;
                             }
                             if (badge) badge.textContent = String(customTargets.length);
                             renderCustomTargetsList();
+                            refreshAdminDebugStatus();
                         };
 
                         const cutoutImg = new Image();
@@ -922,7 +1050,9 @@
                         cutoutImg.onerror = () => applyFinalImage(img, cfg.src);
                         cutoutImg.src = cutoutUrl;
                     };
-                    img.onerror = () => {};
+                    img.onerror = () => {
+                        refreshAdminDebugStatus();
+                    };
                     img.src = cfg.src;
                 });
             }
@@ -938,7 +1068,7 @@
             container.innerHTML = '';
             customTargets.forEach((item) => {
                 const row = document.createElement('div');
-                row.className = 'flex items-center justify-between gap-3 bg-zinc-50 border-2 border-zinc-200 rounded-xl p-2';
+                row.className = 'flex items-center justify-between gap-2.5 bg-zinc-50 border-2 border-zinc-200 rounded-xl p-2';
 
                 const thumb = document.createElement('img');
                 thumb.src = item.dataUrl || item.src;
@@ -948,8 +1078,31 @@
                 const info = document.createElement('div');
                 info.className = 'flex-1 min-w-0';
                 const laneLabel = item.lane === 'sky' ? 'Ciel' : item.lane === 'sidewalk' ? 'Trottoir' : 'Route';
+                const facingLabel = (item.facing || 'right') === 'left' ? '⬅️ Gauche' : '➡️ Droite';
                 const isAdminItem = String(item.id || '').startsWith('admin_target_');
-                info.innerHTML = `<div class="font-bold text-sm truncate">${item.name}${isAdminItem ? ' <span class="text-[10px] bg-amber-200 text-zinc-900 px-1.5 py-0.5 rounded ml-1">Auto</span>' : ''}</div><div class="text-[11px] text-zinc-500">${laneLabel} • ${item.points} pts • Vit. ${item.speed}</div>`;
+                info.innerHTML = `<div class="font-bold text-sm truncate">${item.name}${isAdminItem ? ' <span class="text-[10px] bg-amber-200 text-zinc-900 px-1.5 py-0.5 rounded ml-1">Auto</span>' : ''}</div><div class="text-[11px] text-zinc-500">${laneLabel} • Sens image : <strong>${facingLabel}</strong> • ${item.points} pts</div>`;
+
+                const flipBtn = document.createElement('button');
+                flipBtn.type = 'button';
+                flipBtn.className = 'comic-btn bg-sky-200 hover:bg-sky-300 text-zinc-900 font-black text-xs px-2.5 py-1 rounded-lg cursor-pointer';
+                flipBtn.textContent = '⇄ Sens';
+                flipBtn.title = 'Inverser le sens d’origine (droite / gauche)';
+                flipBtn.addEventListener('click', () => {
+                    const nextFacing = (item.facing || 'right') === 'right' ? 'left' : 'right';
+                    item.facing = nextFacing;
+                    if (String(item.id || '').startsWith('admin_target_')) {
+                        setFacingOverride(item.id, nextFacing);
+                    } else {
+                        saveCustomTargets();
+                    }
+                    targets.forEach((activeTarget) => {
+                        if (activeTarget.type === 'custom' && activeTarget.label === item.name) {
+                            activeTarget.facing = nextFacing;
+                        }
+                    });
+                    renderCustomTargetsList();
+                    showToast('Sens de « ' + item.name + ' » : ' + (nextFacing === 'left' ? '⬅️ Gauche' : '➡️ Droite'));
+                });
 
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
@@ -962,6 +1115,7 @@
 
                 row.appendChild(thumb);
                 row.appendChild(info);
+                row.appendChild(flipBtn);
                 row.appendChild(delBtn);
                 container.appendChild(row);
             });
@@ -971,7 +1125,7 @@
             const fromLeft = Math.random() < 0.5;
             const dir = fromLeft ? 1 : -1;
 
-            if (customTargets.length > 0 && Math.random() < 0.48) {
+            if (customTargets.length > 0 && Math.random() < 0.55) {
                 const tpl = customTargets[Math.floor(Math.random() * customTargets.length)];
                 let yPos = height * 0.76;
                 if (tpl.lane === 'sky') {
@@ -1198,6 +1352,8 @@
             grenadeProjectiles = [];
             explosions = [];
             floatingTexts = [];
+            spawnTarget();
+            spawnTarget();
             spawnTimer = 0.25;
             gameState = 'playing';
             if (introScreen) introScreen.classList.add('hidden');
@@ -1231,17 +1387,20 @@
             targetCtx.fill();
 
             if (avatarCustomImg && avatarCustomImg.complete && avatarCustomImg.naturalWidth > 0) {
+                const boxSize = facingBack ? 86 : 104;
+                const half = boxSize / 2;
+                const offsetY = facingBack ? 0 : -4;
                 targetCtx.save();
                 targetCtx.beginPath();
-                targetCtx.roundRect(-42, -52, 84, 104, 16);
+                targetCtx.roundRect(-half, -half + offsetY, boxSize, boxSize, 16);
                 targetCtx.clip();
-                targetCtx.drawImage(avatarCustomImg, -42, -52, 84, 104);
+                targetCtx.drawImage(avatarCustomImg, -half, -half + offsetY, boxSize, boxSize);
                 targetCtx.restore();
 
                 targetCtx.strokeStyle = '#18181b';
                 targetCtx.lineWidth = 3.5;
                 targetCtx.beginPath();
-                targetCtx.roundRect(-42, -52, 84, 104, 16);
+                targetCtx.roundRect(-half, -half + offsetY, boxSize, boxSize, 16);
                 targetCtx.stroke();
             } else {
                 targetCtx.fillStyle = facingBack ? '#27272a' : '#3f6212';
@@ -1341,13 +1500,32 @@
             ctx.translate(t.x, t.y + bob);
 
             if (t.type === 'custom' && t.img && t.img.complete && t.img.naturalWidth > 0) {
-                const movingLeft = t.vx < 0;
+                const movingRight = t.vx >= 0;
                 const naturalFacesRight = (t.facing || 'right') === 'right';
-                const shouldFlipX = movingLeft ? naturalFacesRight : !naturalFacesRight;
+                const shouldFlipX = movingRight !== naturalFacesRight;
                 if (shouldFlipX) {
                     ctx.scale(-1, 1);
                 }
-                ctx.drawImage(t.img, -t.w / 2, -t.h / 2, t.w, t.h);
+
+                // Respecte les proportions réelles de l'image détourée
+                const ratio = t.img.naturalWidth / Math.max(1, t.img.naturalHeight);
+                let drawW = t.w;
+                let drawH = t.h;
+                if (ratio >= 1) {
+                    drawH = drawW / ratio;
+                } else {
+                    drawW = drawH * ratio;
+                }
+
+                // Ombre réaliste au sol pour ancrer la cible dans le décor
+                if (t.y > height * 0.45) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.30)';
+                    ctx.beginPath();
+                    ctx.ellipse(0, drawH * 0.46, drawW * 0.42, Math.max(5, drawH * 0.11), 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.drawImage(t.img, -drawW / 2, -drawH / 2, drawW, drawH);
                 ctx.restore();
                 return;
             }
@@ -1754,6 +1932,8 @@
                     const img = new Image();
                     img.onload = () => {
                         avatarCustomImg = img;
+                        avatarLoadedStatus = 'manuel';
+                        refreshAdminDebugStatus();
                         try {
                             localStorage.setItem(STORAGE_KEY_AVATAR, ev.target.result);
                         } catch (err) {}
