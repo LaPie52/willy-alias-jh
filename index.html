@@ -23,22 +23,44 @@
         }
         .comic-box {
             border: 3px solid #18181b;
-            box-shadow: 4px 4px 0px #18181b;
+            box-shadow: 5px 5px 0px #18181b;
         }
         .comic-btn {
             border: 3px solid #18181b;
             box-shadow: 3px 3px 0px #18181b;
-            transition: transform 0.08s ease, box-shadow 0.08s ease;
+            transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
+        }
+        .comic-btn:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px #18181b;
         }
         .comic-btn:active {
             transform: translate(2px, 2px);
             box-shadow: 1px 1px 0px #18181b;
+        }
+        .wanted-poster {
+            background:
+                radial-gradient(circle at 12% 14%, rgba(180, 125, 58, 0.22), transparent 36%),
+                radial-gradient(circle at 88% 84%, rgba(146, 92, 34, 0.24), transparent 40%),
+                linear-gradient(165deg, #f7e7be 0%, #ebd194 55%, #dec07c 100%);
+            border: 4px solid #29180a;
+            box-shadow:
+                inset 0 0 0 3px #855824,
+                inset 0 0 28px rgba(120, 72, 22, 0.25),
+                8px 8px 0px #18181b;
         }
         canvas {
             display: block;
             width: 100%;
             height: 100%;
             cursor: crosshair;
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(-1deg); }
+            50% { transform: translateY(-6px) rotate(1deg); }
+        }
+        .animate-float-slow {
+            animation: floatSlow 2.8s ease-in-out infinite;
         }
     </style>
 </head>
@@ -63,7 +85,7 @@
                 <div id="grenadeDisplay" class="font-cartoon text-xl sm:text-2xl text-zinc-900 leading-tight">💣💣💣💣</div>
             </div>
 
-            <div class="bg-sky-200 comic-box rounded-xl px-3 sm:px-4 py-1.5">
+            <div class="bg-sky-200 comic-box rounded-xl px-3 sm:text-sm sm:px-4 py-1.5">
                 <div class="text-[10px] sm:text-xs font-black uppercase text-zinc-800 leading-none">Temps</div>
                 <div id="timeDisplay" class="font-cartoon text-2xl sm:text-3xl text-zinc-900 leading-tight">60s</div>
             </div>
@@ -91,44 +113,79 @@
         <div id="statusToastText" class="bg-zinc-900/95 text-amber-300 border-2 border-amber-300 font-bold text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg"></div>
     </div>
 
-    <!-- Bouton tactile dédié aux grenades pour téléphone / tablette -->
-    <button id="mobileGrenadeBtn" type="button" class="fixed bottom-4 right-4 z-30 comic-btn bg-orange-400 hover:bg-orange-500 active:scale-95 text-zinc-950 font-cartoon text-2xl sm:text-3xl px-4 py-2.5 rounded-2xl cursor-pointer flex items-center gap-2">
-        <span>💣 GRENADE</span>
-        <span id="mobileGrenadeCount" class="bg-zinc-950 text-amber-300 text-sm px-2 py-0.5 rounded-lg font-sans font-black">4</span>
-    </button>
-
-    <!-- Bannière géante lorsque JH crie tous les 10000 points -->
-    <div id="shoutBanner" class="pointer-events-none fixed inset-x-0 top-24 z-30 flex justify-center hidden">
-        <div class="bg-red-600 text-yellow-200 comic-box rounded-2xl px-6 py-3 transform -rotate-2 animate-bounce">
-            <div id="shoutBannerTitle" class="font-cartoon text-4xl sm:text-6xl tracking-wider drop-shadow">Ah Que Johnny !!</div>
-        </div>
-    </div>
-
-    <!-- Écran d'introduction -->
-    <div id="introScreen" class="fixed inset-0 z-40 flex items-center justify-center bg-zinc-950/90 backdrop-blur-sm p-4">
-        <div class="max-w-xl w-full bg-amber-50 comic-box rounded-3xl p-5 sm:p-7 text-zinc-900 text-center space-y-4">
-            <div class="inline-block bg-rose-500 text-white font-cartoon text-lg px-3 py-1 rounded-full border-2 border-zinc-900">
-                🎸 ROCK'N'ROLL SHÉRIF EDITION
+    <!-- Écran d'introduction style affiche WANTED -->
+    <div id="introScreen" class="fixed inset-0 z-40 flex items-center justify-center bg-zinc-950/60 backdrop-blur-[2px] p-3 sm:p-5">
+        <div class="wanted-poster max-w-xl w-full rounded-2xl p-4 sm:p-6 text-stone-950 text-center space-y-3 relative overflow-hidden">
+            <!-- Punaises décoratives aux coins supérieurs -->
+            <div class="pointer-events-none flex items-center justify-between px-1 -mt-1">
+                <span class="w-3.5 h-3.5 rounded-full bg-red-700 border-2 border-stone-950 shadow"></span>
+                <span class="text-[10px] sm:text-xs font-black tracking-[0.25em] uppercase text-amber-950/80">
+                    ★ AVIS DE RECHERCHE — BOULEURS ★
+                </span>
+                <span class="w-3.5 h-3.5 rounded-full bg-red-700 border-2 border-stone-950 shadow"></span>
             </div>
-            <h1 class="font-cartoon text-4xl sm:text-6xl text-zinc-900 leading-none">
-                WILLY ALIAS JH
-            </h1>
-            <p class="text-xs sm:text-sm font-semibold text-zinc-700">
-                Clic gauche : <strong>Tirer</strong> • Clic droit : <strong>Grenade (4 max)</strong> • Épargne la <strong>cycliste</strong> (-1000 pts) • Tous les 10000 pts : <strong>« Ah Que Johnny »</strong> !
-            </p>
 
-            <div class="flex flex-col items-center justify-center">
-                <canvas id="introAvatarCanvas" width="240" height="240" class="w-44 h-44 sm:w-56 sm:h-56 rounded-2xl border-4 border-zinc-900 bg-zinc-800 shadow-lg"></canvas>
-                <div id="adminAssetDebugInfo" class="mt-1.5 text-[11px] font-semibold text-zinc-600"></div>
-                <div class="mt-2 flex flex-wrap justify-center gap-2">
+            <!-- En-tête WANTED et record -->
+            <div class="border-y-2 border-stone-900/80 py-1.5 flex items-center justify-between gap-2 px-1">
+                <span class="text-[11px] font-black uppercase tracking-wider text-amber-950">
+                    🎸 SHÉRIF ROCK'N'ROLL
+                </span>
+                <div class="bg-amber-950 text-amber-200 rounded-md px-2.5 py-0.5 text-xs font-black">
+                    💰 PRIME RECORD : <span id="introBestScore">0</span> PTS
+                </div>
+            </div>
+
+            <div>
+                <div class="font-cartoon text-5xl sm:text-7xl text-stone-950 tracking-[0.14em] leading-none drop-shadow-[2px_2px_0px_rgba(255,255,255,0.45)]">
+                    WANTED
+                </div>
+                <h1 class="font-cartoon text-2xl sm:text-4xl text-red-800 leading-tight mt-0.5">
+                    WILLY ALIAS JH — AH QUE JOHNNY
+                </h1>
+                <p class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wide text-stone-800">
+                    Recherché pour tapage musical &amp; nettoyage express de la rue
+                </p>
+            </div>
+
+            <!-- Zone avatar cliquable et animée style photo d'identité WANTED -->
+            <div class="flex flex-col items-center justify-center bg-gradient-to-b from-slate-800 to-slate-900 border-3 border-stone-950 rounded-xl p-3 shadow-inner relative">
+                <div id="introJokeBubble" class="mb-1.5 bg-yellow-300 text-zinc-950 font-black text-xs px-3 py-1 rounded-full border-2 border-zinc-900 shadow">
+                    Clique sur moi pour me chauffer ! 😎
+                </div>
+                <canvas id="introAvatarCanvas" width="220" height="200" title="Clique pour faire réagir JH !" class="w-40 h-36 sm:w-48 sm:h-44 rounded-lg border-2 border-amber-200/70 cursor-pointer animate-float-slow"></canvas>
+                <div id="adminAssetDebugInfo" class="mt-1 text-[10px] font-semibold text-slate-300"></div>
+
+                <div class="mt-2.5 flex flex-wrap justify-center gap-2">
+                    <button id="introJokeBtn" type="button" class="comic-btn bg-yellow-300 hover:bg-yellow-400 text-zinc-950 font-black text-xs px-3 py-1.5 rounded-xl cursor-pointer">
+                        🎤 Cri de guerre
+                    </button>
                     <button id="introMusicBtn" type="button" class="comic-btn bg-amber-200 hover:bg-amber-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
                         🎸 Musique Rock : ON
+                    </button>
+                    <button id="introScoresBtn" type="button" class="comic-btn bg-sky-200 hover:bg-sky-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
+                        🏆 Scores
                     </button>
                 </div>
             </div>
 
-            <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-emerald-400 hover:bg-emerald-500 text-zinc-950 font-cartoon text-3xl sm:text-4xl py-3 rounded-2xl cursor-pointer">
-                ▶ BIENVENUE À BOULEURS
+            <!-- Règles rapides en encadrés parchemin -->
+            <div class="grid grid-cols-3 gap-2 text-[11px] sm:text-xs font-extrabold">
+                <div class="bg-amber-100/80 border-2 border-stone-900 rounded-lg p-1.5">
+                    <div class="text-base">🔫</div>
+                    <div>Clic : Tirer</div>
+                </div>
+                <div class="bg-amber-100/80 border-2 border-stone-900 rounded-lg p-1.5">
+                    <div class="text-base">💣</div>
+                    <div>Clic droit : Grenade</div>
+                </div>
+                <div class="bg-red-100/90 border-2 border-red-800 rounded-lg p-1.5 text-red-950">
+                    <div class="text-base">🚴‍♀️</div>
+                    <div>Évite la cycliste !</div>
+                </div>
+            </div>
+
+            <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-red-700 hover:bg-red-800 text-amber-100 font-cartoon text-3xl sm:text-4xl py-2.5 rounded-xl cursor-pointer tracking-wider">
+                ▶ ENTRAÎNEMENT À BOULEURS
             </button>
         </div>
     </div>
@@ -213,13 +270,13 @@
             voiceAudio: './assets/audio/audio-jony.mp4',
             customTargets: [
                 { name: 'Camion', src: './assets/images/camion.jpg', lane: 'road', facing: 'left', points: 250, speed: 210, size: 120, color: '#e2e8f0' },
-                { name: 'Gendarmerie', src: './assets/images/gendarmerie.jpg', lane: 'road', facing: 'left', points: 280, speed: 265, size: 112, color: '#2563eb' },
-                { name: 'Police', src: './assets/images/police.jpg', lane: 'road', facing: 'left', points: 280, speed: 270, size: 112, color: '#1d4ed8' },
+                { name: 'Gendarmerie', src: './assets/images/gendarmerie.jpg', lane: 'road', facing: 'left', points: -500, speed: 265, size: 112, color: '#2563eb' },
+                { name: 'Police', src: './assets/images/police.jpg', lane: 'road', facing: 'left', points: -500, speed: 270, size: 112, color: '#1d4ed8' },
                 { name: 'Pompiers', src: './assets/images/pompiers.jpg', lane: 'road', facing: 'left', points: 270, speed: 255, size: 115, color: '#dc2626' },
                 { name: 'Tracteur', src: './assets/images/tracteur.jpg', lane: 'road', facing: 'left', points: 230, speed: 175, size: 115, color: '#16a34a' },
-                { name: 'Voiture 1', src: './assets/images/voiture1.jpg', lane: 'road', facing: 'left', points: 200, speed: 245, size: 105, color: '#ef4444' },
+                { name: 'Voiture 1', src: './assets/images/voiture1.jpg', lane: 'road', facing: 'left', points: 500, speed: 245, size: 105, color: '#ef4444' },
                 { name: 'Voiture 2', src: './assets/images/voiture2.jpg', lane: 'road', facing: 'left', points: 200, speed: 255, size: 105, color: '#f59e0b' },
-                { name: 'Voiture 3', src: './assets/images/voiture3.jpg', lane: 'road', facing: 210, speed: 260, size: 105, color: '#06b6d4' },
+                { name: 'Voiture 3', src: './assets/images/voiture3.jpg', lane: 'road', facing: 'left', points: 210, speed: 260, size: 105, color: '#06b6d4' },
                 { name: 'Voiture 4', src: './assets/images/voiture4.jpg', lane: 'road', facing: 'left', points: 210, speed: 250, size: 105, color: '#8b5cf6' },
                 { name: 'Voiture 5', src: './assets/images/voiture5.jpg', lane: 'road', facing: 'left', points: 220, speed: 265, size: 105, color: '#ec4899' },
                 { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'left', points: 220, speed: 275, size: 105, color: '#64748b' },
@@ -236,11 +293,23 @@
         const STORAGE_KEY_BEST = 'jh_sherif_best_score_v1';
         const STORAGE_KEY_SCORE_HISTORY = 'jh_sherif_score_history_v1';
 
+        const INTRO_JOKES = [
+            'Ah Que Johnny à Bouleurs ! 🎸',
+            'Attention aux gyrophares, ça coûte -500 ! 🚨',
+            'La cycliste passe : laisse-la tranquille ! 🚴‍♀️',
+            '4 grenades dans la besace, clic droit ! 💣',
+            'Qui veut faire un tour sur la route ? 😎'
+        ];
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const introScreen = document.getElementById('introScreen');
         const introAvatarCanvas = document.getElementById('introAvatarCanvas');
         const introAvatarCtx = introAvatarCanvas.getContext('2d');
+        const introJokeBubble = document.getElementById('introJokeBubble');
+        const introJokeBtn = document.getElementById('introJokeBtn');
+        const introScoresBtn = document.getElementById('introScoresBtn');
+        const introBestScoreEl = document.getElementById('introBestScore');
         const adminAssetDebugInfo = document.getElementById('adminAssetDebugInfo');
         const startAdventureBtn = document.getElementById('startAdventureBtn');
         const introMusicBtn = document.getElementById('introMusicBtn');
@@ -283,6 +352,9 @@
         let gameState = 'intro';
         let introTurnProgress = 0;
         let introTurning = false;
+        let introHopTimer = 0;
+        let introJokeIndex = 0;
+        let introDemoSpawnTimer = 0.4;
         let isMuted = false;
         let rockMusicEnabled = true;
 
@@ -293,6 +365,7 @@
         let floatingTexts = [];
         let screenShake = 0;
         let spawnTimer = 0;
+        let highwayAmbienceTimer = 0;
         let lastTimestamp = 0;
         let totalTime = 0;
 
@@ -328,7 +401,6 @@
                 const imageData = octx.getImageData(0, 0, cw, ch);
                 const data = imageData.data;
 
-                // Détecte la couleur dominante des bords (souvent blanc ou gris clair)
                 const borderSamples = [];
                 for (let x = 0; x < cw; x++) {
                     borderSamples.push([x, 0], [x, ch - 1]);
@@ -344,8 +416,7 @@
                     const maxC = Math.max(r, g, b);
                     const minC = Math.min(r, g, b);
                     const saturation = maxC - minC;
-                    // Fond blanc ou gris clair très peu saturé
-                    return maxC >= 224 && saturation <= 26;
+                    return maxC >= 216 && saturation <= 32;
                 };
 
                 const visited = new Uint8Array(cw * ch);
@@ -387,30 +458,34 @@
                     }
                 }
 
-                // Efface les zones blanches/claires connectées au bord et adoucit les pixels adjacents
+                const featherMargin = Math.max(4, Math.round(Math.min(cw, ch) * 0.08));
                 for (let pos = 0; pos < cw * ch; pos++) {
                     const pIdx = pos * 4;
+                    const cx = pos % cw;
+                    const cy = (pos - cx) / cw;
+
                     if (visited[pos]) {
                         data[pIdx + 3] = 0;
                     } else {
-                        const cx = pos % cw;
-                        const cy = (pos - cx) / cw;
-                        const r = data[pIdx];
-                        const g = data[pIdx + 1];
-                        const b = data[pIdx + 2];
-                        const maxC = Math.max(r, g, b);
-                        const minC = Math.min(r, g, b);
-
-                        // Vérifie si le pixel touche une zone transparente détourée
                         let touchesBg = false;
                         if (cx > 0 && visited[pos - 1]) touchesBg = true;
                         else if (cx < cw - 1 && visited[pos + 1]) touchesBg = true;
                         else if (cy > 0 && visited[pos - cw]) touchesBg = true;
                         else if (cy < ch - 1 && visited[pos + cw]) touchesBg = true;
 
-                        if (touchesBg && maxC >= 205 && (maxC - minC) <= 34) {
-                            data[pIdx + 3] = Math.round(data[pIdx + 3] * 0.25);
+                        const distEdgeX = Math.min(cx, cw - 1 - cx);
+                        const distEdgeY = Math.min(cy, ch - 1 - cy);
+                        const edgeDist = Math.min(distEdgeX, distEdgeY);
+                        const edgeFactor = Math.min(1, edgeDist / featherMargin);
+
+                        let alphaFactor = 0.25 + 0.75 * edgeFactor;
+                        const maxC = Math.max(data[pIdx], data[pIdx + 1], data[pIdx + 2]);
+                        const minC = Math.min(data[pIdx], data[pIdx + 1], data[pIdx + 2]);
+                        if (touchesBg && maxC >= 200 && (maxC - minC) <= 38) {
+                            alphaFactor *= 0.22;
                         }
+
+                        data[pIdx + 3] = Math.round(data[pIdx + 3] * alphaFactor);
                     }
                 }
 
@@ -435,6 +510,7 @@
                     bestScore = topFromHistory;
                 }
             }
+            if (introBestScoreEl) introBestScoreEl.textContent = String(bestScore);
         }
 
         function saveScoreEntry(finalPts) {
@@ -467,6 +543,8 @@
             const topScore = scoreHistory.length > 0
                 ? Math.max(bestScore, ...scoreHistory.map((s) => Number(s.score) || 0))
                 : bestScore;
+
+            if (introBestScoreEl) introBestScoreEl.textContent = String(topScore);
 
             const buildHtml = (items, emptyMsg) => {
                 if (!items || items.length === 0) {
@@ -526,6 +604,20 @@
             }, duration);
         }
 
+        function triggerIntroJokeReaction() {
+            ensureAudio();
+            introJokeIndex = (introJokeIndex + 1) % INTRO_JOKES.length;
+            if (introJokeBubble) {
+                introJokeBubble.textContent = INTRO_JOKES[introJokeIndex];
+            }
+            introHopTimer = 0.45;
+            if (introJokeIndex % 2 === 0) {
+                playCarHornSound();
+            } else {
+                playRockChord(196.00, 0.25, 'sawtooth', 0.05);
+            }
+        }
+
         function ensureAudio() {
             if (!audioCtx) {
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -557,11 +649,11 @@
 
                 const filter = audioCtx.createBiquadFilter();
                 filter.type = 'bandpass';
-                filter.frequency.value = 340;
-                filter.Q.value = 0.7;
+                filter.frequency.value = 260;
+                filter.Q.value = 0.55;
 
                 const gain = audioCtx.createGain();
-                gain.gain.value = isMuted || gameState !== 'playing' ? 0 : 0.022;
+                gain.gain.value = isMuted || gameState !== 'playing' ? 0 : 0.045;
 
                 whiteNoise.connect(filter);
                 filter.connect(gain);
@@ -573,8 +665,97 @@
 
         function updateAmbientTrafficGain() {
             if (!trafficNoiseGain || !audioCtx) return;
-            const targetGain = isMuted || gameState !== 'playing' ? 0 : 0.022;
+            const targetGain = isMuted || gameState !== 'playing' ? 0 : 0.045;
             trafficNoiseGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.08);
+        }
+
+        function playHighwayWhooshSound() {
+            if (isMuted || gameState !== 'playing') return;
+            const ctxAudio = ensureAudio();
+            if (!ctxAudio) return;
+            try {
+                const now = ctxAudio.currentTime;
+                const dur = 0.65;
+                const bufferSize = Math.floor(ctxAudio.sampleRate * dur);
+                const noiseBuffer = ctxAudio.createBuffer(1, bufferSize, ctxAudio.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const src = ctxAudio.createBufferSource();
+                src.buffer = noiseBuffer;
+
+                const filter = ctxAudio.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.Q.value = 1.6;
+                filter.frequency.setValueAtTime(190, now);
+                filter.frequency.exponentialRampToValueAtTime(520, now + dur * 0.45);
+                filter.frequency.exponentialRampToValueAtTime(150, now + dur);
+
+                const gain = ctxAudio.createGain();
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.055, now + dur * 0.4);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+                src.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctxAudio.destination);
+                src.start(now);
+                src.stop(now + dur + 0.02);
+            } catch (err) {}
+        }
+
+        function playAngryPersonGroanSound() {
+            if (isMuted || gameState !== 'playing') return;
+            const phrases = [
+                'Eh tu fais quoi là !',
+                'Mais ça va pas la tête !',
+                'Arrête de tirer !',
+                'Hé oh, doucement !'
+            ];
+            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+            let spoke = false;
+            if (typeof window.speechSynthesis !== 'undefined') {
+                try {
+                    const utter = new SpeechSynthesisUtterance(phrase);
+                    utter.lang = 'fr-FR';
+                    utter.pitch = 0.85 + Math.random() * 0.35;
+                    utter.rate = 1.15;
+                    utter.volume = 0.85;
+                    window.speechSynthesis.speak(utter);
+                    spoke = true;
+                } catch (err) {}
+            }
+            if (!spoke) {
+                const ctxAudio = ensureAudio();
+                if (!ctxAudio) return;
+                try {
+                    const now = ctxAudio.currentTime;
+                    const osc = ctxAudio.createOscillator();
+                    const gain = ctxAudio.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(175, now);
+                    osc.frequency.linearRampToValueAtTime(135, now + 0.25);
+                    gain.gain.setValueAtTime(0.04, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                    osc.connect(gain);
+                    gain.connect(ctxAudio.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } catch (err) {}
+            }
+        }
+
+        function triggerHighwayAmbienceEvent() {
+            if (isMuted || gameState !== 'playing') return;
+            const roll = Math.random();
+            if (roll < 0.45) {
+                playCarHornSound();
+            } else if (roll < 0.8) {
+                playHighwayWhooshSound();
+            } else {
+                playAngryPersonGroanSound();
+            }
         }
 
         function playRockChord(freq, duration, type = 'sawtooth', gainVal = 0.045) {
@@ -638,15 +819,15 @@
                 osc2.type = 'triangle';
                 osc1.frequency.setValueAtTime(390, now);
                 osc2.frequency.setValueAtTime(490, now);
-                gain.gain.setValueAtTime(0.06, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                gain.gain.setValueAtTime(0.065, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
                 osc1.connect(gain);
                 osc2.connect(gain);
                 gain.connect(ctxAudio.destination);
                 osc1.start(now);
                 osc2.start(now);
-                osc1.stop(now + 0.29);
-                osc2.stop(now + 0.29);
+                osc1.stop(now + 0.33);
+                osc2.stop(now + 0.33);
             } catch (err) {}
         }
 
@@ -939,7 +1120,7 @@
             refreshAdminDebugStatus();
         }
 
-        function spawnTarget() {
+        function spawnTarget(isDemo = false) {
             const fromLeft = Math.random() < 0.5;
             const dir = fromLeft ? 1 : -1;
 
@@ -954,6 +1135,7 @@
                     yPos = height * (0.65 + Math.random() * 0.14);
                 }
                 const baseSize = tpl.size || 95;
+                const speedFactor = isDemo ? 0.55 : 1;
                 targets.push({
                     type: 'custom',
                     label: tpl.name,
@@ -964,17 +1146,17 @@
                     facing: tpl.facing || 'right',
                     x: fromLeft ? -baseSize : width + baseSize,
                     y: yPos,
-                    vx: dir * (tpl.speed || 230),
+                    vx: dir * (tpl.speed || 230) * speedFactor,
                     vy: 0,
                     w: baseSize * 1.15,
                     h: baseSize * 0.75,
-                    points: tpl.points || 200,
+                    points: Number(tpl.points) || 200,
                     isCyclist: false,
                     bobPhase: Math.random() * Math.PI * 2
                 });
             }
 
-            if (cyclistCustomImg && cyclistCustomImg.complete && cyclistCustomImg.naturalWidth > 0 && Math.random() < 0.14) {
+            if (!isDemo && cyclistCustomImg && cyclistCustomImg.complete && cyclistCustomImg.naturalWidth > 0 && Math.random() < 0.14) {
                 targets.push({
                     type: 'cyclist',
                     label: 'CYCLISTE (-1000)',
@@ -1064,10 +1246,25 @@
                 comboTimer = 0;
                 score = Math.max(0, score - 1000);
                 playCarHornSound();
+                playAngryPersonGroanSound();
                 floatingTexts.push({
                     x: target.x,
                     y: target.y - 20,
                     text: '-1000 CYCLISTE !',
+                    color: '#ef4444',
+                    life: 1.1
+                });
+            } else if (target.points < 0) {
+                combo = 1;
+                comboTimer = 0;
+                const penalty = Math.abs(target.points);
+                score = Math.max(0, score - penalty);
+                playCarHornSound();
+                playAngryPersonGroanSound();
+                floatingTexts.push({
+                    x: target.x,
+                    y: target.y - 18,
+                    text: '-' + penalty + ' (' + target.label + ') !',
                     color: '#ef4444',
                     life: 1.1
                 });
@@ -1128,6 +1325,7 @@
             floatingTexts = [];
             screenShake = 0;
             spawnTimer = 0.2;
+            highwayAmbienceTimer = 1.6;
             player.recoil = 0;
             player.shoutTimer = 0;
             player.shoutText = '';
@@ -1139,7 +1337,7 @@
                 gameOverModal.classList.remove('flex');
             }
 
-            spawnTarget();
+            spawnTarget(false);
             updateHud();
             updateAmbientTrafficGain();
         }
@@ -1362,6 +1560,10 @@
             introAvatarCtx.fillStyle = bgGrad;
             introAvatarCtx.fillRect(0, 0, introAvatarCanvas.width, introAvatarCanvas.height);
 
+            if (introHopTimer > 0) {
+                introHopTimer = Math.max(0, introHopTimer - dt);
+            }
+
             if (introTurning) {
                 introTurnProgress = Math.min(1, introTurnProgress + dt * 2.4);
                 if (introTurnProgress >= 1) {
@@ -1372,13 +1574,14 @@
                 }
             }
 
-            const bob = Math.sin(totalTime * 4.5) * 4;
+            const hopOffset = introHopTimer > 0 ? -Math.sin((introHopTimer / 0.45) * Math.PI) * 18 : 0;
+            const bob = Math.sin(totalTime * 4.5) * 4 + hopOffset;
             const scaleX = introTurning ? Math.max(0.15, Math.abs(Math.cos(introTurnProgress * Math.PI))) : 1;
             const showBack = introTurning ? introTurnProgress > 0.5 : false;
 
             introAvatarCtx.save();
-            introAvatarCtx.translate(introAvatarCanvas.width / 2, introAvatarCanvas.height * 0.56 + bob);
-            introAvatarCtx.scale(scaleX * 1.45, 1.45);
+            introAvatarCtx.translate(introAvatarCanvas.width / 2, introAvatarCanvas.height * 0.58 + bob);
+            introAvatarCtx.scale(scaleX * 1.38, 1.38);
             drawAvatarFigure(introAvatarCtx, 0, 0, 1, showBack, false, '');
             introAvatarCtx.restore();
         }
@@ -1416,8 +1619,21 @@
                 if (shouldFlipX) {
                     ctx.scale(-1, 1);
                 }
-                ctx.globalAlpha = 1;
+                ctx.globalAlpha = 0.94;
                 ctx.drawImage(drawable, -drawW / 2, -drawH / 2, drawW, drawH);
+
+                const radGrad = ctx.createRadialGradient(
+                    0,
+                    0,
+                    Math.min(drawW, drawH) * 0.25,
+                    0,
+                    0,
+                    Math.max(drawW, drawH) * 0.52
+                );
+                radGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                radGrad.addColorStop(1, 'rgba(30, 41, 59, 0.22)');
+                ctx.fillStyle = radGrad;
+                ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
                 ctx.restore();
 
                 ctx.restore();
@@ -1493,6 +1709,30 @@
             totalTime += dt;
 
             if (gameState === 'intro') {
+                introDemoSpawnTimer -= dt;
+                if (introDemoSpawnTimer <= 0 && targets.length < 4) {
+                    spawnTarget(true);
+                    introDemoSpawnTimer = 1.6 + Math.random() * 1.1;
+                }
+                for (let i = targets.length - 1; i >= 0; i--) {
+                    const t = targets[i];
+                    t.x += t.vx * dt;
+                    if (t.x < -180 || t.x > width + 180) {
+                        targets.splice(i, 1);
+                    }
+                }
+
+                ctx.save();
+                if (streetBgImg && streetBgImg.complete && streetBgImg.naturalWidth > 0) {
+                    ctx.drawImage(streetBgImg, 0, 0, width, height);
+                } else {
+                    drawDefaultStreetBackground();
+                }
+                for (const t of targets) {
+                    drawTarget(t);
+                }
+                ctx.restore();
+
                 renderIntroAvatar(dt);
                 requestAnimationFrame(updateAndRender);
                 return;
@@ -1523,9 +1763,15 @@
                     player.shoutTimer = Math.max(0, player.shoutTimer - dt);
                 }
 
+                highwayAmbienceTimer -= dt;
+                if (highwayAmbienceTimer <= 0) {
+                    triggerHighwayAmbienceEvent();
+                    highwayAmbienceTimer = 2.4 + Math.random() * 2.2;
+                }
+
                 spawnTimer -= dt;
                 if (spawnTimer <= 0) {
-                    spawnTarget();
+                    spawnTarget(false);
                     spawnTimer = Math.max(0.45, 1.05 - (60 - timeLeft) * 0.007);
                 }
 
@@ -1714,6 +1960,14 @@
             });
         }
 
+        if (introAvatarCanvas) {
+            introAvatarCanvas.addEventListener('click', triggerIntroJokeReaction);
+        }
+
+        if (introJokeBtn) {
+            introJokeBtn.addEventListener('click', triggerIntroJokeReaction);
+        }
+
         if (startAdventureBtn) {
             startAdventureBtn.addEventListener('click', () => {
                 ensureAudio();
@@ -1772,6 +2026,7 @@
         };
 
         if (openScoresBtn) openScoresBtn.addEventListener('click', openScoresModal);
+        if (introScoresBtn) introScoresBtn.addEventListener('click', openScoresModal);
         if (closeScoresBtn) closeScoresBtn.addEventListener('click', closeScoresModal);
         if (closeScoresFooterBtn) closeScoresFooterBtn.addEventListener('click', closeScoresModal);
         if (clearScoresHistoryBtn) {
