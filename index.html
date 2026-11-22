@@ -487,7 +487,7 @@
                 { name: 'Gendarmerie', src: './assets/images/gendarmerie.jpg', lane: 'road', facing: 'left', points: -1000, speed: 265, size: 172, color: '#2563eb' },
                 { name: 'Police', src: './assets/images/police.jpg', lane: 'road', facing: 'left', points: -1000, speed: 270, size: 172, color: '#1d4ed8' },
                 { name: 'Pompiers', src: './assets/images/pompiers.jpg', lane: 'road', facing: 'left', points: -1000, speed: 255, size: 178, color: '#dc2626' },
-                { name: 'Tracteur', src: './assets/images/tracteur.jpg', lane: 'road', facing: 'left', points: 230, speed: 175, size: 348, color: '#16a34a' },
+                { name: 'Tracteur', src: './assets/images/tracteur.jpg', lane: 'road', facing: 'left', points: 230, speed: 175, size: 261, color: '#16a34a' },
                 { name: 'Voiture 1', src: './assets/images/voiture1.jpg', lane: 'road', facing: 'left', points: 500, speed: 245, size: 164, color: '#ef4444' },
                 { name: 'Voiture 2', src: './assets/images/voiture2.jpg', lane: 'road', facing: 'left', points: 200, speed: 255, size: 164, color: '#f59e0b' },
                 { name: 'Voiture 3', src: './assets/images/voiture3.jpg', lane: 'road', facing: 'left', points: 210, speed: 260, size: 164, color: '#06b6d4' },
@@ -496,7 +496,7 @@
                 { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'left', points: 220, speed: 275, size: 164, color: '#64748b' },
                 { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 248, color: '#f8fafc' },
                 { name: 'MimiCar', src: './assets/images/mimiCar.jpg', lane: 'road', facing: 'right', points: -10000, speed: 520, size: 160, color: '#ef4444', cooldownSeconds: 20 },
-                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'road', facing: 'right', points: 150, speed: 155, size: 396, color: '#334155' },
+                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'road', facing: 'right', points: 150, speed: 155, size: 297, color: '#334155' },
                 { name: 'Mimi', src: './assets/images/mimi.jpg', lane: 'sidewalk', facing: 'right', points: -5000, speed: 135, size: 96, color: '#f43f5e' },
                 { name: 'Chat', src: './assets/images/chat.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 190, size: 68, color: '#d97706' },
                 { name: 'Chien', src: './assets/images/chien.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 205, size: 74, color: '#eab308' },
@@ -1737,96 +1737,29 @@
                 const drawW = t.size;
                 drawH = t.size / Math.max(0.65, Math.min(1.85, ratio));
 
-                if (!t._softSpriteCanvas) {
-                    const pad = 12;
-                    const cw = Math.max(16, Math.round(drawW + pad * 2));
-                    const ch = Math.max(16, Math.round(drawH + pad * 2));
-                    const off = document.createElement('canvas');
-                    off.width = cw;
-                    off.height = ch;
-                    const octx = off.getContext('2d');
-
-                    octx.save();
-                    octx.filter = 'contrast(1.03) saturate(0.98) brightness(0.98)';
-                    octx.drawImage(t.img, pad, pad, drawW, drawH);
-                    octx.restore();
-
-                    try {
-                        const imgData = octx.getImageData(0, 0, cw, ch);
-                        const data = imgData.data;
-                        const cx = cw * 0.5;
-                        const cy = ch * 0.52;
-                        const rx = drawW * 0.47;
-                        const ry = drawH * 0.47;
-
-                        for (let py = 0; py < ch; py++) {
-                            for (let px = 0; px < cw; px++) {
-                                const idx = (py * cw + px) * 4;
-                                const r = data[idx];
-                                const g = data[idx + 1];
-                                const b = data[idx + 2];
-                                const a = data[idx + 3];
-                                if (a === 0) continue;
-
-                                const nx = (px - cx) / Math.max(1, rx);
-                                const ny = (py - cy) / Math.max(1, ry);
-                                const ellDist = Math.sqrt(nx * nx + ny * ny);
-
-                                let edgeMask = 1;
-                                if (ellDist > 0.78) {
-                                    edgeMask = Math.max(0, 1 - (ellDist - 0.78) / 0.28);
-                                    edgeMask = edgeMask * edgeMask * (3 - 2 * edgeMask);
-                                }
-
-                                const minC = Math.min(r, g, b);
-                                const maxC = Math.max(r, g, b);
-                                const brightness = (r + g + b) / 3;
-                                const isNearWhite = brightness > 234 && (maxC - minC) < 24;
-                                let whiteMask = 1;
-                                if (isNearWhite && ellDist > 0.45) {
-                                    whiteMask = Math.max(0, 1 - (brightness - 234) / 21);
-                                }
-
-                                data[idx + 3] = Math.round(a * edgeMask * whiteMask);
-                            }
-                        }
-                        octx.putImageData(imgData, 0, 0);
-                    } catch (err) {
-                        octx.save();
-                        octx.globalCompositeOperation = 'destination-in';
-                        const grad = octx.createRadialGradient(
-                            cw * 0.5, ch * 0.52, Math.min(drawW, drawH) * 0.2,
-                            cw * 0.5, ch * 0.52, Math.max(drawW, drawH) * 0.54
-                        );
-                        grad.addColorStop(0, 'rgba(0,0,0,1)');
-                        grad.addColorStop(0.75, 'rgba(0,0,0,0.92)');
-                        grad.addColorStop(1, 'rgba(0,0,0,0)');
-                        octx.fillStyle = grad;
-                        octx.fillRect(0, 0, cw, ch);
-                        octx.restore();
-                    }
-
-                    t._softSpriteCanvas = off;
-                    t._softSpritePad = pad;
-                }
-
-                const off = t._softSpriteCanvas;
-                const pad = t._softSpritePad || 12;
-
+                // Légère ombre au sol sous la cible pour l'ancrer sans dégrader la netteté de l'image
                 ctx.save();
-                ctx.shadowColor = 'rgba(15, 23, 42, 0.35)';
-                ctx.shadowBlur = 10;
-                ctx.drawImage(off, -drawW * 0.5 - pad, -drawH + 4 - pad);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.28)';
+                ctx.beginPath();
+                ctx.ellipse(0, 2, drawW * 0.44, Math.max(5, drawH * 0.08), 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Dessin net et fidèle de la cible avec coins arrondis discrets
+                ctx.save();
+                const r = Math.min(12, drawW * 0.08, drawH * 0.08);
+                ctx.beginPath();
+                ctx.roundRect(-drawW * 0.5, -drawH + 4, drawW, drawH - 4, r);
+                ctx.clip();
+                ctx.drawImage(t.img, -drawW * 0.5, -drawH + 4, drawW, drawH - 4);
                 ctx.restore();
 
                 ctx.save();
-                const groundBlend = ctx.createLinearGradient(0, -drawH * 0.24, 0, 4);
-                groundBlend.addColorStop(0, 'rgba(24, 24, 27, 0)');
-                groundBlend.addColorStop(1, 'rgba(24, 24, 27, 0.22)');
-                ctx.fillStyle = groundBlend;
+                ctx.strokeStyle = 'rgba(24, 24, 27, 0.45)';
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.ellipse(0, -drawH * 0.1, drawW * 0.44, drawH * 0.14, 0, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.roundRect(-drawW * 0.5, -drawH + 4, drawW, drawH - 4, r);
+                ctx.stroke();
                 ctx.restore();
             } else {
                 ctx.fillStyle = t.color || '#ef4444';
