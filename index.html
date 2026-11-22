@@ -55,6 +55,15 @@
             height: 100%;
             cursor: crosshair;
         }
+        body.force-landscape-rotate #gameCanvas {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 100vh;
+            height: 100vw;
+            transform: translate(-50%, -50%) rotate(90deg);
+            transform-origin: center center;
+        }
         @keyframes floatSlow {
             0%, 100% { transform: translateY(0px) rotate(-1deg); }
             50% { transform: translateY(-6px) rotate(1deg); }
@@ -156,9 +165,6 @@
                 <div id="adminAssetDebugInfo" class="mt-1 text-[10px] font-semibold text-slate-300"></div>
 
                 <div class="mt-2.5 flex flex-wrap justify-center gap-2">
-                    <button id="introJokeBtn" type="button" class="comic-btn bg-yellow-300 hover:bg-yellow-400 text-zinc-950 font-black text-xs px-3 py-1.5 rounded-xl cursor-pointer">
-                        🎤 Cri de guerre
-                    </button>
                     <button id="introMusicBtn" type="button" class="comic-btn bg-amber-200 hover:bg-amber-300 text-zinc-900 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer">
                         🎸 Musique Rock : ON
                     </button>
@@ -185,7 +191,7 @@
             </div>
 
             <button id="startAdventureBtn" type="button" class="w-full comic-btn bg-red-700 hover:bg-red-800 text-amber-100 font-cartoon text-3xl sm:text-4xl py-2.5 rounded-xl cursor-pointer tracking-wider">
-                ▶ ENTRAÎNEMENT À BOULEURS
+                ▶ WELCOME À BOULEURS CITY
             </button>
         </div>
     </div>
@@ -269,24 +275,24 @@
             cyclist: './assets/images/cycliste.png',
             voiceAudio: './assets/audio/audio-jony.mp4',
             customTargets: [
-                { name: 'Camion', src: './assets/images/camion.jpg', lane: 'road', facing: 'left', points: 250, speed: 210, size: 120, color: '#e2e8f0' },
-                { name: 'Gendarmerie', src: './assets/images/gendarmerie.jpg', lane: 'road', facing: 'left', points: -500, speed: 265, size: 112, color: '#2563eb' },
-                { name: 'Police', src: './assets/images/police.jpg', lane: 'road', facing: 'left', points: -500, speed: 270, size: 112, color: '#1d4ed8' },
-                { name: 'Pompiers', src: './assets/images/pompiers.jpg', lane: 'road', facing: 'left', points: 270, speed: 255, size: 115, color: '#dc2626' },
-                { name: 'Tracteur', src: './assets/images/tracteur.jpg', lane: 'road', facing: 'left', points: 230, speed: 175, size: 115, color: '#16a34a' },
-                { name: 'Voiture 1', src: './assets/images/voiture1.jpg', lane: 'road', facing: 'left', points: 500, speed: 245, size: 105, color: '#ef4444' },
-                { name: 'Voiture 2', src: './assets/images/voiture2.jpg', lane: 'road', facing: 'left', points: 200, speed: 255, size: 105, color: '#f59e0b' },
-                { name: 'Voiture 3', src: './assets/images/voiture3.jpg', lane: 'road', facing: 'left', points: 210, speed: 260, size: 105, color: '#06b6d4' },
-                { name: 'Voiture 4', src: './assets/images/voiture4.jpg', lane: 'road', facing: 'left', points: 210, speed: 250, size: 105, color: '#8b5cf6' },
-                { name: 'Voiture 5', src: './assets/images/voiture5.jpg', lane: 'road', facing: 'left', points: 220, speed: 265, size: 105, color: '#ec4899' },
-                { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'left', points: 220, speed: 275, size: 105, color: '#64748b' },
-                { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 115, color: '#f8fafc' },
-                { name: 'MimiCar', src: './assets/images/mimiCar.jpg', lane: 'road', facing: 'right', points: 230, speed: 240, size: 102, color: '#86efac' },
-                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'sidewalk', facing: 'right', points: 150, speed: 130, size: 86, color: '#334155' },
-                { name: 'Chat', src: './assets/images/chat.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 190, size: 76, color: '#d97706' },
-                { name: 'Chien', src: './assets/images/chien.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 205, size: 82, color: '#eab308' },
-                { name: 'Rat', src: './assets/images/rat.jpg', lane: 'sidewalk', facing: 'left', points: 220, speed: 235, size: 72, color: '#9ca3af' },
-                { name: 'Écureuil', src: './assets/images/écureuil.jpg', lane: 'sidewalk', facing: 'right', points: 210, speed: 225, size: 76, color: '#ea580c' }
+                { name: 'Camion', src: './assets/images/camion.jpg', lane: 'road', facing: 'left', points: 250, speed: 210, size: 158, color: '#e2e8f0' },
+                { name: 'Gendarmerie', src: './assets/images/gendarmerie.jpg', lane: 'road', facing: 'left', points: -500, speed: 265, size: 148, color: '#2563eb' },
+                { name: 'Police', src: './assets/images/police.jpg', lane: 'road', facing: 'left', points: -500, speed: 270, size: 148, color: '#1d4ed8' },
+                { name: 'Pompiers', src: './assets/images/pompiers.jpg', lane: 'road', facing: 'left', points: 270, speed: 255, size: 152, color: '#dc2626' },
+                { name: 'Tracteur', src: './assets/images/tracteur.jpg', lane: 'road', facing: 'left', points: 230, speed: 175, size: 150, color: '#16a34a' },
+                { name: 'Voiture 1', src: './assets/images/voiture1.jpg', lane: 'road', facing: 'left', points: 500, speed: 245, size: 140, color: '#ef4444' },
+                { name: 'Voiture 2', src: './assets/images/voiture2.jpg', lane: 'road', facing: 'left', points: 200, speed: 255, size: 140, color: '#f59e0b' },
+                { name: 'Voiture 3', src: './assets/images/voiture3.jpg', lane: 'road', facing: 'left', points: 210, speed: 260, size: 140, color: '#06b6d4' },
+                { name: 'Voiture 4', src: './assets/images/voiture4.jpg', lane: 'road', facing: 'left', points: 210, speed: 250, size: 140, color: '#8b5cf6' },
+                { name: 'Voiture 5', src: './assets/images/voiture5.jpg', lane: 'road', facing: 'left', points: 220, speed: 265, size: 140, color: '#ec4899' },
+                { name: 'Voiture 6', src: './assets/images/voiture6.jpg', lane: 'road', facing: 'left', points: 220, speed: 275, size: 140, color: '#64748b' },
+                { name: 'Manouches', src: './assets/images/manouches.jpg', lane: 'road', facing: 'right', points: 240, speed: 220, size: 152, color: '#f8fafc' },
+                { name: 'MimiCar', src: './assets/images/mimiCar.jpg', lane: 'road', facing: 'right', points: 230, speed: 240, size: 138, color: '#86efac' },
+                { name: 'Poubelles', src: './assets/images/Poubelles.jpg', lane: 'sidewalk', facing: 'right', points: 150, speed: 130, size: 92, color: '#334155' },
+                { name: 'Chat', src: './assets/images/chat.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 190, size: 80, color: '#d97706' },
+                { name: 'Chien', src: './assets/images/chien.jpg', lane: 'sidewalk', facing: 'right', points: 180, speed: 205, size: 86, color: '#eab308' },
+                { name: 'Rat', src: './assets/images/rat.jpg', lane: 'sidewalk', facing: 'right', points: 220, speed: 235, size: 76, color: '#9ca3af' },
+                { name: 'Écureuil', src: './assets/images/écureuil.jpg', lane: 'sidewalk', facing: 'right', points: 210, speed: 225, size: 80, color: '#ea580c' }
             ]
         };
 
@@ -307,7 +313,6 @@
         const introAvatarCanvas = document.getElementById('introAvatarCanvas');
         const introAvatarCtx = introAvatarCanvas.getContext('2d');
         const introJokeBubble = document.getElementById('introJokeBubble');
-        const introJokeBtn = document.getElementById('introJokeBtn');
         const introScoresBtn = document.getElementById('introScoresBtn');
         const introBestScoreEl = document.getElementById('introBestScore');
         const adminAssetDebugInfo = document.getElementById('adminAssetDebugInfo');
@@ -340,6 +345,7 @@
 
         let width = 0;
         let height = 0;
+        let isRotatedPortrait = false;
         let score = 0;
         let bestScore = Number(localStorage.getItem(STORAGE_KEY_BEST) || '0') || 0;
         let scoreHistory = [];
@@ -476,13 +482,13 @@
                         const distEdgeX = Math.min(cx, cw - 1 - cx);
                         const distEdgeY = Math.min(cy, ch - 1 - cy);
                         const edgeDist = Math.min(distEdgeX, distEdgeY);
-                        const edgeFactor = Math.min(1, edgeDist / featherMargin);
+                        const edgeFactor = Math.min(1, edgeDist / Math.max(6, featherMargin * 1.45));
 
-                        let alphaFactor = 0.25 + 0.75 * edgeFactor;
+                        let alphaFactor = Math.pow(edgeFactor, 1.35);
                         const maxC = Math.max(data[pIdx], data[pIdx + 1], data[pIdx + 2]);
                         const minC = Math.min(data[pIdx], data[pIdx + 1], data[pIdx + 2]);
-                        if (touchesBg && maxC >= 200 && (maxC - minC) <= 38) {
-                            alphaFactor *= 0.22;
+                        if (touchesBg && maxC >= 190 && (maxC - minC) <= 45) {
+                            alphaFactor *= 0.1;
                         }
 
                         data[pIdx + 3] = Math.round(data[pIdx + 3] * alphaFactor);
@@ -920,9 +926,43 @@
             }
         }
 
+        function updatePortraitLandscapeMode() {
+            const isSmallScreen = Math.min(window.innerWidth, window.innerHeight) <= 820;
+            const isPortrait = window.innerHeight > window.innerWidth;
+            isRotatedPortrait = isSmallScreen && isPortrait;
+            if (document.body) {
+                document.body.classList.toggle('force-landscape-rotate', isRotatedPortrait);
+            }
+        }
+
+        function requestLandscapeLock() {
+            try {
+                if (screen.orientation && typeof screen.orientation.lock === 'function') {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } catch (err) {}
+        }
+
+        function mapClientToGameCoords(clientX, clientY) {
+            if (!isRotatedPortrait) {
+                return { x: clientX, y: clientY };
+            }
+            // Quand le canvas est tourné de +90deg autour du centre :
+            // x_jeu augmente quand clientY descend ; y_jeu augmente quand clientX monte
+            const gx = clientY * (width / Math.max(1, window.innerHeight));
+            const gy = (window.innerWidth - clientX) * (height / Math.max(1, window.innerWidth));
+            return { x: gx, y: gy };
+        }
+
         function resizeCanvas() {
-            width = window.innerWidth;
-            height = window.innerHeight;
+            updatePortraitLandscapeMode();
+            if (isRotatedPortrait) {
+                width = window.innerHeight;
+                height = window.innerWidth;
+            } else {
+                width = window.innerWidth;
+                height = window.innerHeight;
+            }
             canvas.width = width;
             canvas.height = height;
             player.x = width * 0.5;
@@ -1123,6 +1163,25 @@
         function spawnTarget(isDemo = false) {
             const fromLeft = Math.random() < 0.5;
             const dir = fromLeft ? 1 : -1;
+
+            if (!isDemo && Math.random() < 0.24) {
+                const birdSpeed = (155 + Math.random() * 85) * dir;
+                targets.push({
+                    type: 'bird',
+                    label: 'OISEAU',
+                    x: fromLeft ? -50 : width + 50,
+                    y: height * (0.11 + Math.random() * 0.18),
+                    vx: birdSpeed,
+                    vy: 0,
+                    w: 52,
+                    h: 34,
+                    points: 180,
+                    isCyclist: false,
+                    wingPhase: Math.random() * Math.PI * 2,
+                    bobPhase: Math.random() * Math.PI * 2
+                });
+                return;
+            }
 
             if (targetCatalog.length > 0) {
                 const tpl = targetCatalog[Math.floor(Math.random() * targetCatalog.length)];
@@ -1619,22 +1678,58 @@
                 if (shouldFlipX) {
                     ctx.scale(-1, 1);
                 }
-                ctx.globalAlpha = 0.94;
+                ctx.globalAlpha = 0.95;
                 ctx.drawImage(drawable, -drawW / 2, -drawH / 2, drawW, drawH);
 
-                const radGrad = ctx.createRadialGradient(
-                    0,
-                    0,
-                    Math.min(drawW, drawH) * 0.25,
-                    0,
-                    0,
-                    Math.max(drawW, drawH) * 0.52
-                );
-                radGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-                radGrad.addColorStop(1, 'rgba(30, 41, 59, 0.22)');
-                ctx.fillStyle = radGrad;
+                const horizGrad = ctx.createLinearGradient(-drawW / 2, 0, drawW / 2, 0);
+                horizGrad.addColorStop(0, 'rgba(30, 41, 59, 0.32)');
+                horizGrad.addColorStop(0.14, 'rgba(0, 0, 0, 0)');
+                horizGrad.addColorStop(0.86, 'rgba(0, 0, 0, 0)');
+                horizGrad.addColorStop(1, 'rgba(30, 41, 59, 0.32)');
+                ctx.fillStyle = horizGrad;
+                ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
+
+                const vertGrad = ctx.createLinearGradient(0, -drawH / 2, 0, drawH / 2);
+                vertGrad.addColorStop(0, 'rgba(30, 41, 59, 0.28)');
+                vertGrad.addColorStop(0.16, 'rgba(0, 0, 0, 0)');
+                vertGrad.addColorStop(0.84, 'rgba(0, 0, 0, 0)');
+                vertGrad.addColorStop(1, 'rgba(30, 41, 59, 0.34)');
+                ctx.fillStyle = vertGrad;
                 ctx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
                 ctx.restore();
+
+                ctx.restore();
+                return;
+            }
+
+            if (t.type === 'bird') {
+                const dir = t.vx >= 0 ? 1 : -1;
+                const flap = Math.sin(totalTime * 14 + (t.wingPhase || 0)) * 10;
+                ctx.scale(dir, 1);
+
+                ctx.fillStyle = '#334155';
+                ctx.strokeStyle = '#18181b';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 14, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.moveTo(13, -1);
+                ctx.lineTo(20, 1);
+                ctx.lineTo(13, 3);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#475569';
+                ctx.beginPath();
+                ctx.moveTo(-4, -2);
+                ctx.quadraticCurveTo(2, -16 + flap, 10, -4);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
 
                 ctx.restore();
                 return;
@@ -1717,6 +1812,9 @@
                 for (let i = targets.length - 1; i >= 0; i--) {
                     const t = targets[i];
                     t.x += t.vx * dt;
+                    if (t.type === 'bird') {
+                        t.y += Math.sin(totalTime * 3.5 + (t.bobPhase || 0)) * 22 * dt;
+                    }
                     if (t.x < -180 || t.x > width + 180) {
                         targets.splice(i, 1);
                     }
@@ -1923,30 +2021,38 @@
         }
 
         window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(resizeCanvas, 120);
+        });
 
         canvas.addEventListener('mousemove', (e) => {
-            player.aimX = e.clientX;
-            player.aimY = e.clientY;
+            const pt = mapClientToGameCoords(e.clientX, e.clientY);
+            player.aimX = pt.x;
+            player.aimY = pt.y;
         });
 
         canvas.addEventListener('mousedown', (e) => {
             if (gameState !== 'playing') return;
-            player.aimX = e.clientX;
-            player.aimY = e.clientY;
+            requestLandscapeLock();
+            const pt = mapClientToGameCoords(e.clientX, e.clientY);
+            player.aimX = pt.x;
+            player.aimY = pt.y;
             if (e.button === 2) {
                 e.preventDefault();
-                throwGrenade(e.clientX, e.clientY);
+                throwGrenade(pt.x, pt.y);
             } else if (e.button === 0) {
-                fireBullet(e.clientX, e.clientY);
+                fireBullet(pt.x, pt.y);
             }
         });
 
         canvas.addEventListener('touchstart', (e) => {
             if (gameState !== 'playing' || !e.touches || e.touches.length === 0) return;
+            requestLandscapeLock();
             const touch = e.touches[0];
-            player.aimX = touch.clientX;
-            player.aimY = touch.clientY;
-            fireBullet(touch.clientX, touch.clientY);
+            const pt = mapClientToGameCoords(touch.clientX, touch.clientY);
+            player.aimX = pt.x;
+            player.aimY = pt.y;
+            fireBullet(pt.x, pt.y);
         }, { passive: true });
 
         canvas.addEventListener('contextmenu', (e) => {
@@ -1964,13 +2070,10 @@
             introAvatarCanvas.addEventListener('click', triggerIntroJokeReaction);
         }
 
-        if (introJokeBtn) {
-            introJokeBtn.addEventListener('click', triggerIntroJokeReaction);
-        }
-
         if (startAdventureBtn) {
             startAdventureBtn.addEventListener('click', () => {
                 ensureAudio();
+                requestLandscapeLock();
                 if (introTurning) return;
                 introTurnProgress = 0;
                 introTurning = true;
