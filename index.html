@@ -1191,8 +1191,8 @@
 
         function getLaneGeometry() {
             const sidewalkY = height * 0.61;
-            const roadTopY = height * 0.69;
-            const roadBottomY = height * 0.85;
+            const roadTopY = height * 0.69 + 38;
+            const roadBottomY = height * 0.85 + 38;
             return { sidewalkY, roadTopY, roadBottomY };
         }
 
@@ -1737,7 +1737,7 @@
                 const drawW = t.size;
                 drawH = t.size / Math.max(0.65, Math.min(1.85, ratio));
 
-                // Légère ombre au sol sous la cible pour l'ancrer sans dégrader la netteté de l'image
+                // Légère ombre portée au sol pour ancrer la cible sur la route/trottoir
                 ctx.save();
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.28)';
                 ctx.beginPath();
@@ -1745,22 +1745,46 @@
                 ctx.fill();
                 ctx.restore();
 
-                // Dessin net et fidèle de la cible avec coins arrondis discrets
-                ctx.save();
-                const r = Math.min(12, drawW * 0.08, drawH * 0.08);
-                ctx.beginPath();
-                ctx.roundRect(-drawW * 0.5, -drawH + 4, drawW, drawH - 4, r);
-                ctx.clip();
-                ctx.drawImage(t.img, -drawW * 0.5, -drawH + 4, drawW, drawH - 4);
-                ctx.restore();
+                // Dessin sur canvas hors-écran pour estomper proprement les bords vers la transparence (sans fond blanc)
+                const pad = 10;
+                const offW = Math.ceil(drawW + pad * 2);
+                const offH = Math.ceil(drawH + pad * 2);
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = offW;
+                offCanvas.height = offH;
+                const octx = offCanvas.getContext('2d');
 
-                ctx.save();
-                ctx.strokeStyle = 'rgba(24, 24, 27, 0.45)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.roundRect(-drawW * 0.5, -drawH + 4, drawW, drawH - 4, r);
-                ctx.stroke();
-                ctx.restore();
+                octx.drawImage(t.img, pad, pad, drawW, drawH);
+
+                // Fondu doux sur les bords via destination-in avec dégradés linéaires transparents sur les 4 bords
+                octx.globalCompositeOperation = 'destination-in';
+                const fadeW = Math.min(14, drawW * 0.12);
+                const fadeH = Math.min(14, drawH * 0.12);
+
+                // Masque horizontal
+                const gradX = octx.createLinearGradient(pad, 0, pad + drawW, 0);
+                gradX.addColorStop(0, 'rgba(0,0,0,0)');
+                gradX.addColorStop(Math.min(0.25, fadeW / drawW), 'rgba(0,0,0,1)');
+                gradX.addColorStop(Math.max(0.75, 1 - fadeW / drawW), 'rgba(0,0,0,1)');
+                gradX.addColorStop(1, 'rgba(0,0,0,0)');
+                octx.fillStyle = gradX;
+                octx.fillRect(0, 0, offW, offH);
+
+                // Masque vertical (destination-out sur les bords haut/bas pour combiner les deux axes)
+                octx.globalCompositeOperation = 'destination-out';
+                const topGrad = octx.createLinearGradient(0, pad, 0, pad + fadeH);
+                topGrad.addColorStop(0, 'rgba(0,0,0,1)');
+                topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                octx.fillStyle = topGrad;
+                octx.fillRect(0, 0, offW, pad + fadeH);
+
+                const botGrad = octx.createLinearGradient(0, pad + drawH - fadeH, 0, pad + drawH);
+                botGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                botGrad.addColorStop(1, 'rgba(0,0,0,1)');
+                octx.fillStyle = botGrad;
+                octx.fillRect(0, pad + drawH - fadeH, offW, fadeH + pad);
+
+                ctx.drawImage(offCanvas, -drawW * 0.5 - pad, -drawH + 4 - pad);
             } else {
                 ctx.fillStyle = t.color || '#ef4444';
                 ctx.strokeStyle = '#18181b';
