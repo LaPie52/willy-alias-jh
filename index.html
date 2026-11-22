@@ -480,7 +480,8 @@
             ],
             avatar: './assets/images/Gemini_Generated_Image_xnbtp1xnbtp1xnbt.jpg',
             avatarFallback: './assets/images/avatar.jpg',
-            cyclist: './assets/images/cycliste.png',
+            cyclist: './assets/images/cycliste.jpg',
+            cyclistFallback: './assets/images/cycliste.png',
             voiceAudio: './assets/audio/audio-jony.mp4',
             customTargets: [
                 { name: 'Camion', src: './assets/images/camion.jpg', lane: 'road', facing: 'left', points: 250, speed: 210, size: 184, color: '#e2e8f0' },
@@ -1170,11 +1171,88 @@
                     avatarImg = img;
                 }
             );
-            loadImageWithFallback([ADMIN_ASSETS_CONFIG.cyclist], (img) => {
-                cyclistImg = img;
-            });
+            loadImageWithFallback(
+                [ADMIN_ASSETS_CONFIG.cyclist, ADMIN_ASSETS_CONFIG.cyclistFallback].filter(Boolean),
+                (img) => {
+                    cyclistImg = removeWhiteBackgroundToCanvas(img);
+                }
+            );
             if (customVoiceAudio && ADMIN_ASSETS_CONFIG.voiceAudio) {
                 customVoiceAudio.src = ADMIN_ASSETS_CONFIG.voiceAudio;
+            }
+        }
+
+        // Supprime les fonds blancs/quasi-blancs reliés aux bords d'une image tout en préservant l'intérieur de la cible
+        function removeWhiteBackgroundToCanvas(img) {
+            try {
+                const w = img.naturalWidth || img.width;
+                const h = img.naturalHeight || img.height;
+                if (!w || !h) return img;
+
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                const g = c.getContext('2d');
+                g.drawImage(img, 0, 0, w, h);
+
+                const imageData = g.getImageData(0, 0, w, h);
+                const data = imageData.data;
+                const totalPixels = w * h;
+                const visited = new Uint8Array(totalPixels);
+                const bgMask = new Uint8Array(totalPixels);
+
+                const isNearWhite = (idx) => {
+                    const r = data[idx];
+                    const gr = data[idx + 1];
+                    const b = data[idx + 2];
+                    const a = data[idx + 3];
+                    return a > 10 && r >= 232 && gr >= 232 && b >= 232;
+                };
+
+                const queue = new Int32Array(totalPixels);
+                let head = 0;
+                let tail = 0;
+
+                const enqueueIfWhite = (px, py) => {
+                    if (px < 0 || px >= w || py < 0 || py >= h) return;
+                    const pos = py * w + px;
+                    if (visited[pos]) return;
+                    visited[pos] = 1;
+                    if (isNearWhite(pos * 4)) {
+                        bgMask[pos] = 1;
+                        queue[tail++] = pos;
+                    }
+                };
+
+                for (let x = 0; x < w; x++) {
+                    enqueueIfWhite(x, 0);
+                    enqueueIfWhite(x, h - 1);
+                }
+                for (let y = 0; y < h; y++) {
+                    enqueueIfWhite(0, y);
+                    enqueueIfWhite(w - 1, y);
+                }
+
+                while (head < tail) {
+                    const pos = queue[head++];
+                    const x = pos % w;
+                    const y = (pos - x) / w;
+                    enqueueIfWhite(x + 1, y);
+                    enqueueIfWhite(x - 1, y);
+                    enqueueIfWhite(x, y + 1);
+                    enqueueIfWhite(x, y - 1);
+                }
+
+                for (let pos = 0; pos < totalPixels; pos++) {
+                    if (bgMask[pos]) {
+                        data[pos * 4 + 3] = 0;
+                    }
+                }
+
+                g.putImageData(imageData, 0, 0);
+                return c;
+            } catch (err) {
+                return img;
             }
         }
 
@@ -1183,7 +1261,8 @@
             (ADMIN_ASSETS_CONFIG.customTargets || []).forEach((cfg) => {
                 const img = new Image();
                 img.onload = () => {
-                    customTargetSprites.push({ ...cfg, img });
+                    const cleanedImg = removeWhiteBackgroundToCanvas(img);
+                    customTargetSprites.push({ ...cfg, img: cleanedImg });
                 };
                 img.src = cfg.src;
             });
@@ -1746,7 +1825,7 @@
                 ctx.restore();
 
                 // Dessin sur canvas hors-écran pour estomper proprement les bords vers la transparence (sans fond blanc)
-                const pad = 10;
+                const pad = 6;
                 const offW = Math.ceil(drawW + pad * 2);
                 const offH = Math.ceil(drawH + pad * 2);
                 const offCanvas = document.createElement('canvas');
@@ -1756,21 +1835,19 @@
 
                 octx.drawImage(t.img, pad, pad, drawW, drawH);
 
-                // Fondu doux sur les bords via destination-in avec dégradés linéaires transparents sur les 4 bords
+                // Fondu léger uniquement sur l'extrême bord extérieur pour éviter toute arête dure
                 octx.globalCompositeOperation = 'destination-in';
-                const fadeW = Math.min(14, drawW * 0.12);
-                const fadeH = Math.min(14, drawH * 0.12);
+                const fadeW = Math.min(6, drawW * 0.04);
+                const fadeH = Math.min(6, drawH * 0.04);
 
-                // Masque horizontal
                 const gradX = octx.createLinearGradient(pad, 0, pad + drawW, 0);
                 gradX.addColorStop(0, 'rgba(0,0,0,0)');
-                gradX.addColorStop(Math.min(0.25, fadeW / drawW), 'rgba(0,0,0,1)');
-                gradX.addColorStop(Math.max(0.75, 1 - fadeW / drawW), 'rgba(0,0,0,1)');
+                gradX.addColorStop(Math.min(0.08, fadeW / drawW), 'rgba(0,0,0,1)');
+                gradX.addColorStop(Math.max(0.92, 1 - fadeW / drawW), 'rgba(0,0,0,1)');
                 gradX.addColorStop(1, 'rgba(0,0,0,0)');
                 octx.fillStyle = gradX;
                 octx.fillRect(0, 0, offW, offH);
 
-                // Masque vertical (destination-out sur les bords haut/bas pour combiner les deux axes)
                 octx.globalCompositeOperation = 'destination-out';
                 const topGrad = octx.createLinearGradient(0, pad, 0, pad + fadeH);
                 topGrad.addColorStop(0, 'rgba(0,0,0,1)');
