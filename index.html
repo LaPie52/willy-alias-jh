@@ -509,7 +509,6 @@
         const STORAGE_KEY_BEST = 'jh_sherif_best_score_v1';
         const STORAGE_KEY_SCORE_HISTORY = 'jh_sherif_score_history_v1';
         const STORAGE_KEY_NICKNAME = 'jh_sherif_nickname_v1';
-        const SHARED_SCORES_API_URL = 'https://kvdb.io/A2k9mP7xLqR4vN8wT3zB6y/willy_alias_jh_top10';
 
         const INTRO_JOKES = [
             'Ah Que Johnny à Bouleurs ! 🎸',
@@ -569,7 +568,6 @@
         let bestScore = Number(localStorage.getItem(STORAGE_KEY_BEST) || 0);
         let playerNickname = String(localStorage.getItem(STORAGE_KEY_NICKNAME) || '').trim();
         let scoreHistory = [];
-        let sharedScores = [];
         let grenadesLeft = 4;
         let timeLeft = 60;
         let nextShoutThreshold = 10000;
@@ -1074,7 +1072,7 @@
         }
 
         // =====================================================================
-        // GESTION DES SCORES ET DU TOP 10 PARTAGÉ
+        // GESTION DES SCORES ET DU TOP 10
         // =====================================================================
         function loadScoreHistory() {
             try {
@@ -1102,81 +1100,14 @@
             scoreHistory.sort((a, b) => b.score - a.score);
             scoreHistory = scoreHistory.slice(0, 50);
             saveScoreHistory();
-
-            sharedScores.push(entry);
-            sharedScores.sort((a, b) => b.score - a.score);
-            sharedScores = sharedScores.slice(0, 10);
-            renderScoreHistoryLists();
-            syncSharedScores(entry);
-        }
-
-        async function fetchSharedScores() {
-            try {
-                const res = await fetch(`${SHARED_SCORES_API_URL}?t=${Date.now()}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data)) {
-                        const map = new Map();
-                        [...data, ...sharedScores, ...scoreHistory].forEach((item) => {
-                            if (!item || typeof item.score !== 'number') return;
-                            const key = `${item.nickname || 'Shérif JH'}_${item.score}_${item.date || ''}`;
-                            if (!map.has(key)) map.set(key, item);
-                        });
-                        sharedScores = Array.from(map.values())
-                            .sort((a, b) => b.score - a.score)
-                            .slice(0, 10);
-                        renderScoreHistoryLists();
-                    }
-                }
-            } catch (err) {
-                // Conserve l'affichage local si le réseau est indisponible
-            }
-        }
-
-        async function syncSharedScores(latestEntry) {
-            try {
-                const res = await fetch(`${SHARED_SCORES_API_URL}?t=${Date.now()}`);
-                let remoteList = [];
-                if (res.ok) {
-                    const parsed = await res.json();
-                    if (Array.isArray(parsed)) remoteList = parsed;
-                }
-                const map = new Map();
-                [...remoteList, latestEntry, ...sharedScores].forEach((item) => {
-                    if (!item || typeof item.score !== 'number') return;
-                    const key = `${item.nickname || 'Shérif JH'}_${item.score}_${item.date || ''}`;
-                    if (!map.has(key)) map.set(key, item);
-                });
-                const mergedTop10 = Array.from(map.values())
-                    .sort((a, b) => b.score - a.score)
-                    .slice(0, 10);
-                sharedScores = mergedTop10;
-                renderScoreHistoryLists();
-
-                await fetch(SHARED_SCORES_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(mergedTop10)
-                });
-            } catch (err) {
-                // Ignore les erreurs réseau ponctuelles
-            }
         }
 
         function renderScoreHistoryLists() {
-            const top10 = [...sharedScores, ...scoreHistory]
-                .sort((a, b) => b.score - a.score)
-                .filter((item, index, arr) => {
-                    const key = `${item.nickname || 'Shérif JH'}_${item.score}_${item.date || ''}`;
-                    return arr.findIndex((x) => `${x.nickname || 'Shérif JH'}_${x.score}_${x.date || ''}` === key) === index;
-                })
-                .slice(0, 10);
-
-            const computedBest = Math.max(bestScore, top10.length > 0 ? top10[0].score : 0);
-            if (introBestScore) introBestScore.textContent = String(computedBest);
-            if (modalBestScore) modalBestScore.textContent = String(computedBest);
+            if (introBestScore) introBestScore.textContent = String(bestScore);
+            if (modalBestScore) modalBestScore.textContent = String(bestScore);
             if (modalGamesCount) modalGamesCount.textContent = String(scoreHistory.length);
 
+            const top10 = [...scoreHistory].sort((a, b) => b.score - a.score).slice(0, 10);
             const buildHtml = () => {
                 if (top10.length === 0) {
                     return '<div class="text-xs text-zinc-500 italic py-2 text-center">Aucun score enregistré pour le moment.</div>';
@@ -1251,6 +1182,7 @@
             }
         }
 
+        // Isole la femme et sa trottinette en supprimant les fonds clairs extérieurs et les éléments parasites latéraux
         function isolateScooterRiderSprite(img) {
             try {
                 const cleaned = removeWhiteBackgroundToCanvas(img);
@@ -1267,6 +1199,7 @@
                 const imageData = g.getImageData(0, 0, w, h);
                 const data = imageData.data;
 
+                // Nettoie les fonds clairs/gris clairs isolés (y compris à l'intérieur des cadres blancs de photo)
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i];
                     const gr = data[i + 1];
@@ -1279,6 +1212,7 @@
                 }
                 g.putImageData(imageData, 0, 0);
 
+                // Trouve la composante connexe principale (la femme et sa trottinette) pour éliminer les petits objets/bords détachés
                 const visited = new Uint8Array(w * h);
                 const components = [];
 
@@ -1329,7 +1263,9 @@
                             minX,
                             maxX,
                             minY,
-                            maxY
+                            maxY,
+                            centerX: (minX + maxX) * 0.5,
+                            centerY: (minY + maxY) * 0.5
                         });
                     }
                 }
@@ -1341,6 +1277,7 @@
 
                     mainComp.pixels.forEach((p) => { keepMask[p] = 1; });
 
+                    // Conserve les composantes proches de la silhouette principale (ex: roue de trottinette ou mèche légèrement séparée)
                     for (let i = 1; i < components.length; i++) {
                         const comp = components[i];
                         const nearMain =
@@ -1361,6 +1298,7 @@
                     g.putImageData(imageData, 0, 0);
                 }
 
+                // Recadre autour de la femme et de sa trottinette
                 let cropMinX = w, cropMaxX = 0, cropMinY = h, cropMaxY = 0;
                 for (let y = 0; y < h; y++) {
                     for (let x = 0; x < w; x++) {
@@ -1393,6 +1331,7 @@
             }
         }
 
+        // Supprime les fonds blancs/quasi-blancs reliés aux bords d'une image tout en préservant l'intérieur de la cible
         function removeWhiteBackgroundToCanvas(img) {
             try {
                 const w = img.naturalWidth || img.width;
@@ -2034,6 +1973,7 @@
                 const drawW = t.size;
                 drawH = t.size / Math.max(0.65, Math.min(1.85, ratio));
 
+                // Légère ombre portée au sol pour ancrer la cible sur la route/trottoir
                 ctx.save();
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.28)';
                 ctx.beginPath();
@@ -2041,6 +1981,7 @@
                 ctx.fill();
                 ctx.restore();
 
+                // Dessin sur canvas hors-écran pour estomper proprement les bords vers la transparence (sans fond blanc)
                 const pad = 6;
                 const offW = Math.ceil(drawW + pad * 2);
                 const offH = Math.ceil(drawH + pad * 2);
@@ -2051,6 +1992,7 @@
 
                 octx.drawImage(t.img, pad, pad, drawW, drawH);
 
+                // Supprime tout résidu blanc ou gris très clair en périphérie tout en conservant les couleurs vives
                 try {
                     const frame = octx.getImageData(0, 0, offW, offH);
                     const px = frame.data;
@@ -2063,14 +2005,18 @@
                         const maxC = Math.max(r, g, b);
                         const minC = Math.min(r, g, b);
                         const sat = maxC - minC;
+                        // Si le pixel est très clair et peu saturé (fond blanc / halo blanc JPEG)
                         if (minC >= 205 && sat <= 24) {
                             const whiteness = Math.min(1, (minC - 205) / 45);
                             px[i + 3] = Math.round(a * (1 - whiteness));
                         }
                     }
                     octx.putImageData(frame, 0, 0);
-                } catch (err) {}
+                } catch (err) {
+                    // Repli si CORS bloque getImageData : le mode multiply atténuera les blancs
+                }
 
+                // Fondu léger uniquement sur l'extrême bord extérieur pour éviter toute arête dure
                 octx.globalCompositeOperation = 'destination-in';
                 const fadeW = Math.min(5, drawW * 0.03);
                 const fadeH = Math.min(5, drawH * 0.03);
@@ -2432,7 +2378,6 @@
         }
 
         function openScoresModal() {
-            fetchSharedScores();
             renderScoreHistoryLists();
             if (scoresModal) {
                 scoresModal.classList.remove('hidden');
@@ -2473,7 +2418,6 @@
 
         loadScoreHistory();
         renderScoreHistoryLists();
-        fetchSharedScores();
         initBackground();
         loadCustomTargets();
         startCountryMusicLoop();
